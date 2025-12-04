@@ -1,0 +1,197 @@
+﻿@page "/preference"
+@using AmuleRemoteControl.Components.Data.AmuleModel
+@using AmuleRemoteControl.Components.Interfaces
+
+@if (_accessService.IsAuthorized)
+{
+
+    @if (preferenceModel == null)
+    {
+        <p>No data</p>
+    }
+    else
+    {
+        <RadzenTemplateForm Data="@preferenceModel" Submit="@((PreferenceModel args) => { Submit(args); })">
+            <RadzenStack>
+                <RadzenFieldset Text="Web Server">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Page Refresh Interval" Component="PageRefreshInterval" />
+                            <RadzenNumeric Style="width: 20%;" Name="PageRefreshInterval" @bind-Value=preferenceModel.PageRefreshInterval />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Use gzip compression" Component="UseGzipCompression" />
+                            <RadzenSwitch Name="UseGzipCompression" @bind-Value=preferenceModel.UseGzipCompression />
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+                <RadzenFieldset Text="Bandwidth limits">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Max download rate" Component="MaxDownloadRate" />
+                            <RadzenNumeric Style="width: 20%;" Name="MaxDownloadRate" @bind-Value=preferenceModel.MaxDownloadRate />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Max upload rate" Component="MaxUploadRate" />
+                            <RadzenNumeric Style="width: 20%;" Name="MaxUploadRate" @bind-Value=preferenceModel.MaxUploadRate />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Slot allocation" Component="SlotAllocation" />
+                            <RadzenNumeric Style="width: 20%;" Name="SlotAllocation" @bind-Value=preferenceModel.SlotAllocation />
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+                <RadzenFieldset Text="Connection Settings">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Max total connections (total)" Component="MaxTotalConnection" />
+                            <RadzenNumeric Style="width: 20%;" Name="MaxTotalConnection" @bind-Value=preferenceModel.MaxTotalConnection />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Max sources per file" Component="MaxSourcePerFile" />
+                            <RadzenNumeric Style="width: 20%;" Name="PageRefreshInterval" @bind-Value=preferenceModel.MaxSourcePerFile />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Autoconnect at startup" Component="AutoConnectAtStartUp" />
+                            <RadzenSwitch Name="AutoConnectAtStartUp" @bind-Value=preferenceModel.AutoConnectAtStartUp />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Reconnect when connection lost" Component="ReconnectWhenLostConnection" />
+                            <RadzenSwitch Name="ReconnectWhenLostConnection" @bind-Value=preferenceModel.ReconnectWhenLostConnection />
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+
+                <RadzenFieldset Text="Network Settings">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="TCP port" Component="TCPport" />
+                            <RadzenNumeric Style="width: 20%;" Name="TCPport" @bind-Value=preferenceModel.TCPport />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="UDP port" Component="UDPport" />
+                            <RadzenNumeric Style="width: 20%;" Name="UDPport" @bind-Value=preferenceModel.UDPport />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Disable UDP connections" Component="DisableUDPconnections" />
+                            <RadzenSwitch Name="DisableUDPconnections" @bind-Value=preferenceModel.DisableUDPconnections />
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+
+                <RadzenFieldset Text="File Settings">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Check free space" Component="CheckFreeSpace" />
+                            <RadzenSwitch Name="CheckFreeSpace" @bind-Value=preferenceModel.CheckFreeSpace />
+                        </RadzenRow>
+                        @if (preferenceModel.CheckFreeSpace)
+                        {
+                            <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                                <RadzenLabel Text="Minimum free space (Mb)" Component="MinimumFreeSpaceMb" />
+                                <RadzenNumeric Style="width: 20%;" Name="MinimumFreeSpaceMb" @bind-Value=preferenceModel.MinimumFreeSpaceMb />
+                            </RadzenRow>
+                        }
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Added download files have auto priority" Component="AddDownloadFileAutoPriority" />
+                            <RadzenSwitch Name="AddDownloadFileAutoPriority" @bind-Value=preferenceModel.AddDownloadFileAutoPriority />
+                        </RadzenRow>
+
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="New shared files have auto priority" Component="NewSharedFileAutoPriority" />
+                            <RadzenSwitch Name="NewSharedFileAutoPriority" @bind-Value=preferenceModel.NewSharedFileAutoPriority />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="I.C.H. active" Component="ICHactive" />
+                            <RadzenSwitch Name="ICHactive" @bind-Value=preferenceModel.ICHactive />
+                        </RadzenRow>
+                        @*                         <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenLabel Text="AICH trusts every hash (not recommended)" Component="AICHtrustsEveryHash" />
+                <RadzenSwitch Name="AICHtrustsEveryHash" @bind-Value=preferenceModel.AICHtrustsEveryHash />
+                </RadzenRow> *@
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Alloc full chunks of .part files" Component="AllocFullChunksPartFiles" />
+                            <RadzenSwitch Name="AllocFullChunksPartFiles" @bind-Value=preferenceModel.AllocFullChunksPartFiles />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Alloc full disk space for .part files" Component="AllocFullDiskSpacePartFiles" />
+                            <RadzenSwitch Name="AllocFullDiskSpacePartFiles" @bind-Value=preferenceModel.AllocFullDiskSpacePartFiles />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Add files to download paused" Component="AddFileDownloadQueuePauseMode" />
+                            <RadzenSwitch Name="AddFileDownloadQueuePauseMode" @bind-Value=preferenceModel.AddFileDownloadQueuePauseMode />
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenLabel Text="Extract metadata tags" Component="ExtractMetadataTags" />
+                            <RadzenSwitch Name="ExtractMetadataTags" @bind-Value=preferenceModel.ExtractMetadataTags />
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-8 rz-mb-4">
+                <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Large" Icon="save" Text="Save" />
+            </RadzenStack>
+        </RadzenTemplateForm>
+    }
+}
+
+@code {
+
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+
+    PreferenceModel? preferenceModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_accessService.IsAuthorized)
+        {
+            await RefreshPage();
+            await _service.AutoStatus();
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+
+    }
+
+    private async Task RefreshPage()
+    {
+        preferenceModel = await _service.GetPreferences();
+    }
+
+    private async Task Submit(PreferenceModel preferenceModel)
+    {
+        var _response = await _service.PostPreferencesCommand(preferenceModel);
+
+        if (_response != null)
+        {
+            preferenceModel = _response;
+            StateHasChanged();
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Preferences Saved",
+                    Detail = $"Saved preferences",
+                    Duration = 4000
+
+                });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Fail save preferences",
+                    Detail = $"Error in saving preferences: check the log.",
+                    Duration = 4000
+
+                });
+        }
+    }
+}

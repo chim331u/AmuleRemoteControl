@@ -1,0 +1,73 @@
+﻿@page "/"
+
+
+@if (connecting)
+{
+    <RadzenText>Connecting to aMule remote...</RadzenText>
+    <RadzenProgressBar style="width: 100%" ProgressBarStyle="ProgressBarStyle.Secondary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+}
+
+@* @if (logging)
+{
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start">
+        <RadzenIcon Icon="done" />
+        <RadzenText>Connected to aMule remote</RadzenText>
+    </RadzenStack>
+    <RadzenText>Logging...</RadzenText>
+    <RadzenProgressBar style="width: 100%" ProgressBarStyle="ProgressBarStyle.Secondary" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+} *@
+
+@code
+{
+    [Inject]
+    public IAccessService _service { get; set; }
+
+    [Inject]
+    public Ed2kUrl Ed2kUrlService { get; set; }
+
+    bool connecting = false;
+    // bool logging = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var link = Ed2kUrlService.UrlData;
+        // Console.WriteLine("Mainpage Url= " + link);
+        if (link != null)
+        {
+            NavManager.NavigateTo($"/addlink");
+            return;
+        }
+        else
+        {
+            if (await ConnectToaMule() == "OK")
+            {
+                NavManager.NavigateTo("/login");
+
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Network Setting",
+                        Detail = $"Please set network setting",
+                        Duration = 4000
+
+                    });
+
+                //navigate to config network page
+                NavManager.NavigateTo("/setting");
+            }
+        }
+    }
+
+    private async Task<string> ConnectToaMule()
+    {
+        connecting = true;
+
+        string connectionStatus = await _service.CheckUrl();
+        connecting = false;
+        return connectionStatus;
+    }
+
+}

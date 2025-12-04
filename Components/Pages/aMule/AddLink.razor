@@ -1,0 +1,66 @@
+﻿@page "/addlink"
+@using AmuleRemoteControl.Components.Interfaces
+
+
+@if (_accessService.IsAuthorized)
+{
+    @*     <p>ED2K link:</p> *@
+    <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Clear" Click="ClearEd2kLink"></RadzenButton>
+        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Download" Click="AddEd2kLink"></RadzenButton>
+    </RadzenRow>
+
+    <RadzenRow AlignItems="AlignItems.Center" Class="rz-mt-12">
+        <RadzenTextArea style="width: 100%" Rows="20" @bind-Value="@link"></RadzenTextArea>
+    </RadzenRow>
+
+}
+
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+    [Inject]
+    public Ed2kUrl Ed2kUrlService { get; set; }
+
+    string? link;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_accessService.IsAuthorized)
+        {
+            NavManager.NavigateTo("/login");
+        }
+        else
+        {
+            await _service.AutoStatus();
+
+            if (Ed2kUrlService.UrlData != null)
+            {
+                link = Ed2kUrlService.UrlData;
+                StateHasChanged();
+            }
+
+        }
+    }
+
+    private async Task AddEd2kLink()
+    {
+        if (!string.IsNullOrEmpty(link))
+        {
+            await _service.AddEd2kLink(link);
+            Log.Information("Link sent to download");
+            Ed2kUrlService.UrlData = null;
+            link = string.Empty;
+            NavManager.NavigateTo("downloading");
+        }
+    }
+
+    private async Task ClearEd2kLink()
+    {
+        Ed2kUrlService.UrlData = null;
+        link = string.Empty;
+        StateHasChanged();
+    }
+}

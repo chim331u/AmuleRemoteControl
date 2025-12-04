@@ -1,0 +1,80 @@
+﻿@page "/upload"
+@using AmuleRemoteControl.Components.Data.AmuleModel
+@using AmuleRemoteControl.Components.Interfaces
+
+@if (_accessService.IsAuthorized)
+{
+
+    @if (uploadFiles == null)
+    {
+        <p>No data</p>
+    }
+    else
+    {
+        <RadzenRow JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Icon="sync" Text="Refresh"
+                          Click="Refresh" />
+        </RadzenRow>
+        <RadzenDataList Data="@uploadFiles" TItem="UploadFile" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="false" Style="width: 100%; padding: 0;">
+            <Template Context="_upload">
+                @* <RadzenCard Style="width: 100%; padding: 0;"> *@
+                <RadzenStack>
+                    <RadzenFormField Text="File Name" Variant="Variant.Text" class="rz-color-secondary">
+                        <RadzenTextBox @bind-Value="@_upload.FileName" Disabled />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="User" Variant="Variant.Text" class="rz-color-secondary">
+                        <RadzenTextBox @bind-Value="@_upload.UserName" Disabled />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Up" Variant="Variant.Text" class="rz-color-secondary">
+                        <RadzenTextBox @bind-Value="@_upload.Up" Disabled />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Down" Variant="Variant.Text" class="rz-color-secondary">
+                        <RadzenTextBox @bind-Value="@_upload.Down" Disabled />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Speed" Variant="Variant.Text" class="rz-color-secondary">
+                        <RadzenTextBox @bind-Value="@_upload.Speed" Disabled />
+                    </RadzenFormField>
+
+                </RadzenStack>
+
+                @* </RadzenCard> *@
+            </Template>
+        </RadzenDataList>
+    }
+}
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+
+    IList<UploadFile> uploadFiles = new List<UploadFile>();
+    // string totalSpeedText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_accessService.IsAuthorized)
+        {
+            await Refresh();
+            await _service.AutoStatus();
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+
+    }
+
+    private async Task Refresh()
+    {
+
+        uploadFiles = await _service.GetUploads();
+        // GetTotalDownloadSpeed();
+        StateHasChanged();
+
+    }
+}

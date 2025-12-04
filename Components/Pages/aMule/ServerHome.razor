@@ -1,0 +1,319 @@
+﻿@page "/server"
+@using AmuleRemoteControl.Components.Data.AmuleModel
+@using AmuleRemoteControl.Components.Interfaces
+
+@if (_accessService.IsAuthorized)
+{
+
+    @if (servers == null)
+    {
+        <p>loading servers...</p>
+    }
+    else
+    {
+        <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByName" Text="Name" />
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByUsers" Text="User" />
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByFiles" Text="File" />
+
+            <RadzenButton IsBusy=@busy ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Small" Icon="sync" Click="Refresh" />
+        </RadzenRow>
+
+        <RadzenStack>
+            <RadzenRow AlignItems="AlignItems.Center">
+                <RadzenLabel Style="@($"color: {(_service.Status.Ed2kStat.Contains("Connected") ? "green" : " red")}")"><strong>ED2K: </strong>@_service.Status.Ed2kStat</RadzenLabel>
+                <RadzenLabel Style="@($"color: {(_service.Status.KadStat.Contains("Connected") ? "green" : " red")}")"><strong>Kad: </strong>@_service.Status.KadStat</RadzenLabel>
+            </RadzenRow>
+        </RadzenStack>
+
+
+        <RadzenDataGrid @ref=grid Data="@_servers" Count="@count" LoadData="@LoadData" AllowVirtualization="true"
+                        AllowFiltering="false" FilterPopupRenderMode="PopupRenderMode.OnDemand"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
+                        Style="height:560px" AllowSorting="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="Servers" Property="Files" Title="File N.">
+                    <Template Context="_server">
+                        <RadzenCard Style="width: 100%; padding: 0;">
+                            <RadzenStack>
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="5" SizeMD="2">
+                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Server Name:" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="7" SizeMD="10">
+                                        <RadzenText TextStyle="TextStyle.Body2">@(_server.ServerName)</RadzenText>
+                                    </RadzenColumn>
+                                </RadzenRow>
+
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="5" SizeMD="4">
+                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Description:" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="7" SizeMD="8">
+                                        <RadzenText TextStyle="TextStyle.Body2">@_server.Description</RadzenText>
+                                    </RadzenColumn>
+                                </RadzenRow>
+
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="5" SizeMD="4">
+                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Address:" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="7" SizeMD="8">
+                                        <RadzenText TextStyle="TextStyle.Body2">@(_server.Address)</RadzenText>
+                                    </RadzenColumn>
+                                </RadzenRow>
+
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="5" SizeMD="4">
+                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Users:" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="7" SizeMD="8">
+                                        <RadzenText TextStyle="TextStyle.Body2">@_utilityService.FormatAsGeneral(_server.Users)</RadzenText>
+                                    </RadzenColumn>
+                                </RadzenRow>
+
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="5" SizeMD="4">
+                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Files:" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="7" SizeMD="8">
+                                        <RadzenText TextStyle="TextStyle.Body2">@_utilityService.FormatAsGeneral(_server.Files)</RadzenText>
+                                    </RadzenColumn>
+                                </RadzenRow>
+
+                                <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+
+                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Icon="sync" Text="Delete" Click=@(args => DeleteServer(_server)) />
+                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+                                                  Size="ButtonSize.Medium" Icon="usb" Text="Connect" Click=@(args => ConnectServer(_server)) />
+                                </RadzenRow>
+
+                            </RadzenStack>
+
+                        </RadzenCard>
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+
+    }
+}
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+    [Inject]
+    public IUtilityServices _utilityService { get; set; }
+
+    IList<Servers> servers;
+    IEnumerable<Servers> _servers;
+
+    // Stats stat = new Stats();
+    bool busy;
+    RadzenDataGrid<Servers> grid;
+    int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _service.StatusChanged += this.OnStateChanged;
+
+        if (_accessService.IsAuthorized)
+        {
+            servers = await _service.GetServers();
+            // stat = await _service.GetStats();
+            await _service.AutoStatus();
+            StateHasChanged();
+
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+
+    }
+
+    private void OnStateChanged(object? sender, EventArgs e)
+       => this.InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+        => _service.StatusChanged -= this.OnStateChanged;
+
+    protected async Task ConnectServer(Servers server)
+    {
+        servers = await _service.ConnectServer(server.ServerId, server.Port);
+        // stat = await _service.GetStats();
+        StateHasChanged();
+        if (servers != null)
+        {
+            NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Info,
+                        Summary = "Server Connected",
+                        Detail = $"Server {server.ServerName} connected",
+                        Duration = 4000
+
+                    });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Fail server connection",
+                        Detail = $"Error in connection server: check the log.",
+                        Duration = 4000
+
+                    });
+        }
+    }
+
+    protected async Task DeleteServer(Servers server)
+    {
+        //confirm delete
+        var dialogResult = await DialogService.OpenAsync("Confirm Delete", ds =>
+    @<RadzenStack Gap="1.5rem">
+        <p>Do you want delete the server <b>@server.ServerName</b>?</p>
+        <RadzenStack Gap="2rem" Class="rz-p-4 rz-p-md-12">
+            <RadzenRow AlignItems="AlignItems.Center" Class="rz-mt-4">
+                <RadzenButton Text="No" Click="() => ds.Close(false)" ButtonStyle="ButtonStyle.Light" />
+                <RadzenButton Click="() => ds.Close(true)" Text="Yes" ButtonStyle="ButtonStyle.Secondary"></RadzenButton>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenStack>
+    );
+
+        if (dialogResult != null && dialogResult)
+        {
+
+            servers = await _service.RemoveServer(server.ServerId, server.Port);
+            // stat = await _service.GetStats();
+            StateHasChanged();
+
+            if (servers != null)
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Info,
+                        Summary = "Server Removed",
+                        Detail = $"Server {server.ServerName} removed",
+                        Duration = 4000
+
+                    });
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Fail server remove",
+                        Detail = $"Error in delete server: check the log.",
+                        Duration = 4000
+
+                    });
+            }
+        }
+    }
+
+    async Task LoadData(LoadDataArgs args)
+    {
+        // await Task.Yield();
+
+        // if (!string.IsNullOrEmpty(args.Filter) && lastfilter != args.Filter)
+        // {
+        //     args.Skip = 0;
+        // }
+
+        // console.Log($"Skip: {args.Skip}, Top: {args.Top}");
+
+        // var query = dbContext.OrderDetails.AsQueryable();
+
+        // if (!string.IsNullOrEmpty(args.Filter))
+        // {
+        //     lastfilter = args.Filter;
+        //     query = query.Where(args.Filter);
+        //     count = await Task.FromResult(query.Count());
+        // }
+        // else
+        // {
+        count = servers.Count();
+        // }
+
+        //np(User.Name) desc
+        // if (!string.IsNullOrEmpty(args.OrderBy))
+        // {
+        //     if (args.OrderBy.Contains("desc"))
+        //     {
+
+        //         var a = salaries.AsQueryable();
+
+        //         _salaries = salaries.OrderByDescending(x => x.User.Name);
+        //     }
+        //     else
+        //     {
+        //         _salaries = salaries.OrderBy(x => x.User.Name);
+        //     }
+        // }
+
+        _servers = servers.Skip(args.Skip.Value).Take(args.Top.Value).ToList();
+    }
+
+    protected async Task Refresh()
+    {
+        busy = true;
+        // stat = await _service.GetStats();
+        busy = false;
+        StateHasChanged();
+    }
+
+    bool orderNameAsc = false;
+    bool orderUsersAsc = false;
+    bool orderFilesAsc = false;
+
+    protected void OrderByName()
+    {
+        if (orderNameAsc)
+        {
+            servers = servers.OrderBy(x => x.ServerName).ToList();
+        }
+        else
+        {
+            servers = servers.OrderByDescending(x => x.ServerName).ToList();
+        }
+
+        orderNameAsc = !orderNameAsc;
+        StateHasChanged();
+    }
+
+    protected void OrderByUsers()
+    {
+        if (orderUsersAsc)
+        {
+            servers = servers.OrderBy(x => Convert.ToInt32(x.Users)).ToList();
+        }
+        else
+        {
+            servers = servers.OrderByDescending(x => Convert.ToInt32(x.Users)).ToList();
+        }
+
+        orderUsersAsc = !orderUsersAsc;
+        StateHasChanged();
+    }
+
+    protected void OrderByFiles()
+    {
+        if (orderFilesAsc)
+        {
+            servers = servers.OrderBy(x => Convert.ToInt32(x.Files)).ToList();
+        }
+        else
+        {
+            servers = servers.OrderByDescending(x => Convert.ToInt32(x.Files)).ToList();
+        }
+
+        orderFilesAsc = !orderFilesAsc;
+        StateHasChanged();
+    }
+}
+
+

@@ -1,0 +1,246 @@
+﻿@page "/login"
+@page "/login/{loggedOut:bool}"
+@using Plugin.Fingerprint
+@using Plugin.Fingerprint.Abstractions
+@using System.Globalization
+@using AmuleRemoteControl.Components.Data
+@using AmuleRemoteControl.Components.Interfaces
+@using Radzen
+@using Serilog
+
+@if (loading)
+{
+    <p>logging...</p>
+}
+else
+{
+    <RadzenRow Gap="2rem" Class="rz-p-0 rz-p-lg-4">
+
+    <RadzenStack>
+        <RadzenFieldset Text="Login">
+            <RadzenStack Gap="1rem">
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenLabel>aMule password:</RadzenLabel>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenPassword @bind-Value=_loginData.Password Placeholder="Enter password..." Name="psw"></RadzenPassword>
+                    </RadzenColumn>
+                </RadzenRow>
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenLabel>Remember Psw:</RadzenLabel>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenSwitch @bind-Value="_loginData.RememberPsw" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenLabel>Use Biometric:</RadzenLabel>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenSwitch @bind-Value="_loginData.UseBiometric" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow AlignItems="AlignItems.Center">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenLabel>Auto Login:</RadzenLabel>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenSwitch @bind-Value="_loginData.AutomaticLogin" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End">
+                    <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="login" Variant="Variant.Flat" Text="Login" Click="Login"></RadzenButton>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenFieldset>
+
+    </RadzenStack>
+
+</RadzenRow>
+}
+
+
+@code {
+
+    [Inject]
+    public IAccessService _service { get; set; }
+    [Inject]
+    public IUtilityServices _utilityService { get; set; }
+    [Inject]
+    public IFingerprint fingerprint { get; set; }
+    [Inject]
+    public Ed2kUrl Ed2kUrlService { get; set; }
+
+    LoginData _loginData = new LoginData();
+    bool loading = true;
+
+    [Parameter]
+    public bool? loggedOut { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Log.Information($"Culture: {CultureInfo.CurrentCulture.Name}");
+
+        //load saved data
+        var loginData = await _utilityService.ReadLoginSettingData();
+        if (loginData != null)
+        {
+            var lastLoginTime = _utilityService.ReadLastLogin();
+            if (loggedOut!=true && (DateTime.Now.Subtract(lastLoginTime).TotalMinutes < 5 || (!string.IsNullOrEmpty(loginData.Password) && loginData.AutomaticLogin)))
+            {
+                loading = false;
+                //autologin
+                //login
+                if (await _service.LoggedIn(loginData))
+                {
+                    _utilityService.WriteLastLogin(DateTime.Now);
+                    Log.Information("Saving login data...");
+                    await _utilityService.WriteLoginSettingData(loginData);
+
+                    if (Ed2kUrlService.UrlData != null)
+                    {
+                        NavManager.NavigateTo("/addlink");
+                    }
+                    else
+                    {
+                        NavManager.NavigateTo("/downloading");
+                    }
+
+                }
+                else
+                {
+                    NotificationService.Notify(new NotificationMessage
+                        {
+                            Severity = NotificationSeverity.Warning,
+                            Summary = "Login Fail",
+                            Detail = $"Please enter the password",
+                            Duration = 4000
+
+                        });
+
+                }
+            }
+            else
+            {
+                _loginData = loginData;
+                loading = false;
+                StateHasChanged();
+
+                //if biometric --> login with bio
+                if (_loginData.UseBiometric)
+                {
+                    await UseBiometricLogin();
+                }
+            }
+        }
+        else
+        {
+            loading = false;
+        }
+
+    }
+
+
+    private async Task Login()
+    {
+        if (!string.IsNullOrEmpty(_loginData.Password))
+        {
+            //login
+            if (await _service.LoggedIn(_loginData))
+            {
+                _utilityService.WriteLastLogin(DateTime.Now);
+                Log.Information("Saving login data...");
+                await _utilityService.WriteLoginSettingData(_loginData);
+
+                if (Ed2kUrlService.UrlData != null)
+                {
+                    NavManager.NavigateTo("/addlink");
+                }
+                else
+                {
+                    NavManager.NavigateTo("/downloading");
+                }
+
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Login Fail",
+                        Detail = $"Please enter the password",
+                        Duration = 4000
+
+                    });
+
+            }
+        }
+        else
+        {
+            //enter password - psw is required
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Password required",
+                    Detail = $"Please enter the password",
+                    Duration = 4000
+
+                });
+        }
+
+    }
+
+    private async Task UseBiometricLogin()
+    {
+        Log.Information($"Using biometric login");
+
+        if (await BiometricLogin())
+        {
+            Log.Information($"Biometric authorized");
+            await Login();
+
+        }
+        else
+        {
+            Log.Information($"Biometric NOT authorized - login failed");
+
+            // Log.Warning($"Biometric login failed");
+            // NotificationService.Notify(new NotificationMessage
+            //     {
+            //         Severity = NotificationSeverity.Error,
+            //         Summary = "Login failed",
+            //         Detail = $"Please check password",
+            //         Duration = 4000
+
+            //     });
+        }
+
+
+    }
+
+    private async Task<bool> BiometricLogin()
+    {
+        var request = new AuthenticationRequestConfiguration("Login using biometrics", "Confirm login with your biometrics");
+
+        // var result = await CrossFingerprint.Current.AuthenticateAsync(request);
+        var result = await fingerprint.AuthenticateAsync(request);
+
+        if (result.Authenticated)
+        {
+            Log.Information($"Authenticated! - Biometric Access granted - {result.Status}");
+            return true;
+        }
+        else
+        {
+            Log.Information($"Not authenticated! - {result.ErrorMessage} - {result.Status}");
+            return false;
+        }
+    }
+}

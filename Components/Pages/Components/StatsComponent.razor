@@ -1,0 +1,17 @@
+﻿
+<p>Ed2k: @stat.Ed2kStat</p>
+<p>Kad: @stat.KadStat</p>
+
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+
+    Stats stat = new Stats();
+
+    protected override async Task OnInitializedAsync()
+    {
+        stat = await _service.GetStats();
+        StateHasChanged();
+    }
+
+}

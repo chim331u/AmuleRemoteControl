@@ -1,0 +1,79 @@
+﻿@page "/logamule"
+@using AmuleRemoteControl.Components.Interfaces
+
+@if (_accessService.IsAuthorized)
+{
+    <RadzenTabs RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Top">
+        <Tabs>
+            <RadzenTabsItem Text="aMule Log">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem" Class="rz-mt-4 rz-p-4 rz-border-radius-1" Style="border: var(--rz-grid-cell-border)">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-m-0">aMule log</RadzenText>
+                        <RadzenButton Click=@refreshLog Text="Refresh" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" />
+                    </RadzenStack>
+
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="0" ID="event-console" Class="rz-pt-1"
+                    Style="border-top: var(--rz-grid-cell-border); min-height: 2rem; overflow: auto;">
+                        @if (consoleLog != null)
+                        {
+                            <RadzenTextArea Disabled Rows="20" class="w-100" Value="@consoleLog"></RadzenTextArea>
+                        }
+                    </RadzenStack>
+            </RadzenStack>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Server Info">
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem" Class="rz-mt-4 rz-p-4 rz-border-radius-1" Style="border: var(--rz-grid-cell-border)">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-m-0">Server Info</RadzenText>
+                        <RadzenButton Click=@refreshServerInfo Text="Refresh" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" />
+                    </RadzenStack>
+
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="0" ID="event-console" Class="rz-pt-1"
+                                 Style="border-top: var(--rz-grid-cell-border); min-height: 2rem; overflow: auto;">
+                        @if (consoleLog != null)
+                        {
+                            <RadzenTextArea Disabled Rows="20" class="w-100" Value="@serverInfo"></RadzenTextArea>
+                        }
+                    </RadzenStack>
+                </RadzenStack>
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+}
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+
+
+    string? consoleLog;
+    string? serverInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_accessService.IsAuthorized)
+        {
+            await refreshLog();
+            await refreshServerInfo();
+            await _service.AutoStatus();
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+
+    }
+
+    protected async Task refreshLog()
+    {
+        consoleLog = await _service.GetaMuleLog();
+        StateHasChanged();
+    }    
+    
+    protected async Task refreshServerInfo()
+    {
+        serverInfo = await _service.GetServerInfo();
+        StateHasChanged();
+    }
+}

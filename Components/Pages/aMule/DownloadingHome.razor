@@ -1,0 +1,202 @@
+﻿@page "/downloading"
+@page "/home"
+
+@using AmuleRemoteControl.Components.Data.AmuleModel
+@using AmuleRemoteControl.Components.Interfaces
+@implements IDisposable
+
+@if (AccessService!.IsAuthorized)
+{
+    @if (_downloadFiles == null)
+    {
+        <p>No data</p>
+    }
+    else
+    {
+        @foreach(var data in _downloadFiles.OrderBy(x=>x.Status))
+        {
+            <RadzenCard Variant="Variant.Filled" Gap="1">
+
+                @* <div @onclick="@(() => (_fileId == data.FileId) ? (_fileId = "") : (_fileId = data.FileId) )">
+                  <div @onclick="@(() => _fileId = data.FileId)">*@
+                    <div @onclick="@(() => Expand(data.FileId))">
+
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                        <RadzenText class="rz-color-secondary">@data.FileName</RadzenText>
+                    </RadzenStack>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">@data.Status</RadzenText>
+                        @if (data.Status != "Paused")
+                        {
+                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">
+                                Speed: @data.DownloadSpeed
+                            </RadzenText>
+                        }
+                    </RadzenStack>
+                    <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" 
+                    >
+                        <RadzenProgressBar style="width: 100%"
+                                           ProgressBarStyle=@(data.Status != "Paused" ? ProgressBarStyle.Secondary : ProgressBarStyle.Primary)
+                                                                                      @bind-Value="@data.Progress" ShowValue="true"/>
+                    </RadzenStack>
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                 JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Size: @data.Size</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Completed: @data.Completed</RadzenText>
+                    </RadzenStack>
+                    @if (_fileId == data.FileId)
+                    {
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                     JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Source: @data.Sources</RadzenText>
+                        </RadzenStack>
+
+                        <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                     JustifyContent="JustifyContent.SpaceBetween">
+                            <RadzenButton Click=@(() => PrioDown(data.FileId)) Icon="remove_circle_outline"
+                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                          Size="ButtonSize.Large"/>
+                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Priority: @data.Priority</RadzenText>
+                            <RadzenButton Click=@(() => PrioUp(data.FileId)) Icon="add_circle_outline"
+                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                          Size="ButtonSize.Large"/>
+                        </RadzenStack>
+                        <RadzenStack Gap="1px" Orientation="Orientation.Horizontal"
+                                     JustifyContent=JustifyContent.SpaceBetween AlignItems="AlignItems.Center">
+
+                            <RadzenButton Icon="delete" Click=@(() => Cancel(data.FileId))
+                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                          Size="ButtonSize.Large"/>
+                            <p>Delete</p>
+                            @if (data.Status == "Paused")
+                            {
+
+                                <p>Resume</p>
+                                <RadzenButton Icon="play_circle" Click=@(() => Resume(data.FileId))
+                                              ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Size="ButtonSize.Large"/>
+                            }
+                            else
+                            {
+                                <p>Pause</p>
+                                <RadzenButton Icon="pause_circle" Click=@(() => Pause(data.FileId))
+                                              ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                              Size="ButtonSize.Large"/>
+                            }
+                        </RadzenStack>
+                    }
+                </div>
+            </RadzenCard>
+            <br/>
+        }
+
+
+    }
+}
+
+@code {
+    [Inject] public IAmuleRemoteServices? Service { get; set; }
+    [Inject] public IAccessService? AccessService { get; set; }
+
+    IList<DownloadFile> _downloadFiles = new List<DownloadFile>();
+    private CancellationTokenSource? _cts;
+
+    string _fileId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AccessService is { IsAuthorized: true })
+        {
+            await Refresh();
+            if (Service != null) await Service.AutoStatus();
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _cts = new CancellationTokenSource();
+            _ = AutoRefresh(_cts.Token);
+        }
+    }
+
+    private async Task Refresh()
+    {
+        _downloadFiles = await Service!.GetDownloading();
+        await Service.AutoDownSpeed();
+        StateHasChanged();
+    }
+
+    private async Task Resume(string fileId)
+    {
+        _downloadFiles = await Service!.PostDownloadCommand(fileId, "resume");
+        StateHasChanged();
+    }
+
+    private async Task Pause(string fileId)
+    {
+        _downloadFiles = await Service!.PostDownloadCommand(fileId, "pause");
+
+        StateHasChanged();
+    }
+
+    private async Task Cancel(string fileId)
+    {
+        _downloadFiles = await Service!.PostDownloadCommand(fileId, "cancel");
+
+        StateHasChanged();
+    }
+
+    private async Task PrioUp(string fileId)
+    {
+        _downloadFiles = await Service!.PostDownloadCommand(fileId, "prioup");
+
+        StateHasChanged();
+    }
+
+    private async Task PrioDown(string fileId)
+    {
+        _downloadFiles = await Service!.PostDownloadCommand(fileId, "priodown");
+
+        StateHasChanged();
+    }
+
+    private async Task AutoRefresh(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(5000, cancellationToken);
+                await Refresh();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when component is disposed or navigation occurs
+        }
+    }
+
+    private void Expand(string fileId)
+    {
+        if (_fileId==fileId)
+        {
+            _fileId = string.Empty;
+        }
+        else
+        {
+            _fileId = fileId;
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

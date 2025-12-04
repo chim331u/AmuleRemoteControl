@@ -1,0 +1,243 @@
+﻿@page "/setting"
+@using System.Text.Json
+@using AmuleRemoteControl.Components.Data.Setting
+
+@inject ILogger<Setting> logger
+
+<RadzenTabs RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Top">
+    <Tabs>
+        <RadzenTabsItem Text="Network Setting">
+            @if (settingList != null)
+            {
+                <RadzenLabel>aMule remote Url: @_utilityController.ApiUrl</RadzenLabel>
+                <hr />
+                <RadzenTabs RenderMode="TabRenderMode.Client" TabPosition="TabPosition.Top">
+                    <Tabs>
+                        @foreach (var item in settingList)
+                        {
+                            <RadzenTabsItem Text=@item.Name>
+                                <RadzenTemplateForm TItem="@NetworkSetting" Data=@item InvalidSubmit=@OnInvalidSubmit Submit="@SaveSetting">
+                                    <RadzenStack>
+                                        <RadzenFormField Text="Name" Variant="Variant.Text">
+                                            <ChildContent>
+                                                <RadzenTextBox Name="name" @bind-Value="@item.Name" />
+                                            </ChildContent>
+                                            <Helper>
+                                                <RadzenRequiredValidator Component="name" Text="Name is required." />
+                                            </Helper>
+                                        </RadzenFormField>
+                                        <RadzenFormField Text="Address" Variant="Variant.Text">
+                                            <ChildContent>
+                                                <RadzenTextBox Name="address" @bind-Value="@item.Address" Placeholder="mule address" />
+                                            </ChildContent>
+                                            <Helper>
+                                                <RadzenRequiredValidator Component="address" Text="Address is required." />
+                                            </Helper>
+                                        </RadzenFormField>
+                                        <RadzenFormField Text="Port" Variant="Variant.Text">
+                                            <ChildContent>
+                                                <RadzenTextBox Name="port" @bind-Value="@item.Port" />
+                                            </ChildContent>
+                                            <Helper>
+                                                <RadzenRequiredValidator Component="port" Text="Port is required." />
+                                            </Helper>
+                                        </RadzenFormField>
+                                        <RadzenStack>
+                                            <RadzenText Text="Is Active"></RadzenText>
+                                            <RadzenSwitch @bind-Value=@item.IsActive Change="@(args=>IsActiveChange(item))"></RadzenSwitch>
+                                        </RadzenStack>
+                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                                            <RadzenButton ButtonStyle="ButtonStyle.Dark" Icon="delete" Text="Delete" Click="@(args=>DeleteSetting(item))"></RadzenButton>
+                                            <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Success" Icon="save" Text="Save"></RadzenButton>
+                                        </RadzenStack>
+                                    </RadzenStack>
+                                </RadzenTemplateForm>
+                            </RadzenTabsItem>
+                        }
+                        <RadzenTabsItem Icon="add" @onclick="AddNewSetting">
+                            <RadzenTemplateForm TItem="@NetworkSetting" Data=@newNetworkSetting InvalidSubmit=@OnInvalidSubmit Submit="@AddSetting">
+                                <RadzenStack>
+                                    <RadzenFormField Text="Name" Variant="Variant.Text">
+                                        <ChildContent>
+                                            <RadzenTextBox Name="name" @bind-Value="@newNetworkSetting.Name" Placeholder="Connection name" />
+                                        </ChildContent>
+                                        <Helper>
+                                            <RadzenRequiredValidator Component="name" Text="Name is required." />
+                                        </Helper>
+                                    </RadzenFormField>
+                                    <RadzenFormField Text="Address" Variant="Variant.Text">
+                                        <ChildContent>
+                                            <RadzenTextBox Name="address" @bind-Value="@newNetworkSetting.Address" Placeholder="mule Address" />
+                                        </ChildContent>
+                                        <Helper>
+                                            <RadzenRequiredValidator Component="address" Text="Address is required." />
+                                        </Helper>
+                                    </RadzenFormField>
+                                    <RadzenFormField Text="Port" Variant="Variant.Text">
+                                        <ChildContent>
+                                            <RadzenTextBox Name="port" @bind-Value="@newNetworkSetting.Port" Placeholder="mule remote port" />
+                                        </ChildContent>
+                                        <Helper>
+                                            <RadzenRequiredValidator Component="port" Text="Port is required." />
+                                        </Helper>
+                                    </RadzenFormField>
+                                    <RadzenStack>
+                                        <RadzenText Text="Is Active"></RadzenText>
+                                        <RadzenSwitch @bind-Value=@newNetworkSetting.IsActive Change="@(args=>IsActiveChange(newNetworkSetting))"></RadzenSwitch>
+                                    </RadzenStack>
+                                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                                        <RadzenButton ButtonStyle="ButtonStyle.Dark" Icon="backspace" Text="Cancel" Click="@AddNewSetting"></RadzenButton>
+                                        <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Success" Icon="save" Text="Save"></RadzenButton>
+                                    </RadzenStack>
+                                </RadzenStack>
+                            </RadzenTemplateForm>
+                        </RadzenTabsItem>
+                    </Tabs>
+                </RadzenTabs>
+            }
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+
+@code {
+    [Inject]
+    public IUtilityServices? _utilityController { get; set; }
+    [Inject]
+    public ILogger<string>? _logger { get; set; }
+
+    IList<NetworkSetting>? settingList;
+
+    NetworkSetting? newNetworkSetting = new NetworkSetting();
+
+    bool addNew = false;
+
+    protected override void OnInitialized()
+    {
+        settingList = _utilityController.ReadNetworkSettingJson().OrderByDescending(x => x.IsActive).ToList();
+    }
+
+    private void SaveSetting(NetworkSetting setting)
+    {
+        var isSaved = _utilityController.WriteNetworkSettingJson(settingList);
+        if (isSaved)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Setting saved",
+                    Detail = $"Setting saved",
+                    Duration = 4000
+
+                });
+            NavManager.NavigateTo("/login");
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Setting save failed",
+                    Detail = $"File not saved - Please check the log",
+                    Duration = 4000
+
+                });
+        }
+        StateHasChanged();
+    }
+
+    private void AddSetting(NetworkSetting setting)
+    {
+        settingList.Add(setting);
+
+        var isSaved = _utilityController.WriteNetworkSettingJson(settingList);
+        if (isSaved)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Setting Added",
+                    Detail = $"Setting saved",
+                    Duration = 4000
+
+                });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Setting save failed",
+                    Detail = $"Setting not saved - Please check the log",
+                    Duration = 4000
+
+                });
+        }
+        newNetworkSetting = new NetworkSetting();
+        StateHasChanged();
+    }
+
+    private void DeleteSetting(NetworkSetting setting)
+    {
+        settingList.Remove(setting);
+
+        var isSaved = _utilityController.WriteNetworkSettingJson(settingList);
+
+        if (isSaved)
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Setting deleted",
+                    Detail = $"Setting deleted",
+                    Duration = 4000
+
+                });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Setting delete failed",
+                    Detail = $"File not saved - Please check the log",
+                    Duration = 4000
+
+                });
+        }
+        StateHasChanged();
+    }
+
+    private void AddNewSetting()
+    {
+        newNetworkSetting = new NetworkSetting();
+        StateHasChanged();
+    }
+
+    private void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+        NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Incomplete form",
+                Detail = $"Compile required fields",
+                Duration = 4000
+
+            });
+    }
+
+    private void IsActiveChange(NetworkSetting networkSetting)
+    {
+        if (networkSetting.IsActive)
+        {
+            networkSetting.IsActive = false;
+            //set all other not active
+            var activeSetting = settingList.Where(x => x.IsActive).FirstOrDefault();
+
+            activeSetting.IsActive = false;
+            networkSetting.IsActive = true;
+        }
+    }
+
+
+}

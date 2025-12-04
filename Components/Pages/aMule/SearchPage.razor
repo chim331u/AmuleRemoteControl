@@ -1,0 +1,171 @@
+﻿@page "/search"
+
+@using AmuleRemoteControl.Components.Data.AmuleModel
+@using AmuleRemoteControl.Components.Interfaces
+@implements IDisposable
+
+@if (_accessService.IsAuthorized)
+{
+
+    <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Gap="1rem">
+        <RadzenTextBox @bind-Value="@searchText" Placeholder="Search..." type="search"></RadzenTextBox>
+        <RadzenDropDown Style="width: 30%" Data="@(Enum.GetValues(typeof(SearchType)).Cast<Enum>())" @bind-Value="@_searchType" />
+    </RadzenRow>
+    <br />
+    <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Gap="1rem">
+        <RadzenButton Icon="sync" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Refresh" Click="RefreshSearchResult"></RadzenButton>
+        @if (selectedFile != null)
+        {
+            <RadzenButton Icon="download" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Download" Click="DownloadFile"></RadzenButton>
+        }
+        <RadzenButton Icon="search" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Search" IsBusy="searchIsBusy" Click="Search"></RadzenButton>
+    </RadzenRow>
+    <hr />
+    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false" FilterMode="FilterMode.Advanced"
+                    AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                    Data="@searchResult" LogicalFilterOperator="LogicalFilterOperator.Or" SelectionMode="DataGridSelectionMode.Single"
+                    TItem="Search" AllowRowSelectOnRowClick="true" @bind-Value=@selectedFile>
+        <Columns>
+            <RadzenDataGridColumn TItem="Search" Filterable="true" Sortable="true" Title="Name" Frozen="false" TextAlign="TextAlign.Center">
+                <Template Context="data">
+                    <p style="white-space:pre-wrap">@data.FileName</p>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn Width="25%" Property="FileSize" Filterable="false" Sortable="true" Title="Size" Frozen="true" TextAlign="TextAlign.Center" />
+            <RadzenDataGridColumn Width="20%" Property="Sources" Filterable="false" Sortable="true" Title="N." Frozen="true" TextAlign="TextAlign.Center" />
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    [Inject]
+    public IAmuleRemoteServices _service { get; set; }
+    [Inject]
+    public IAccessService _accessService { get; set; }
+
+    string searchText = string.Empty;
+    List<Search> searchResult = new List<Search>();
+    bool searchIsBusy = false;
+    IList<Search>? selectedFile;
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_accessService.IsAuthorized)
+        {
+            NavManager.NavigateTo("/login");
+        }
+        else
+        {
+            await _service.AutoStatus();
+        }
+    }
+
+
+    SearchType? _searchType = SearchType.Global;
+
+    protected async Task Search()
+    {
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            searchIsBusy = true;
+            searchResult = new List<Search>();
+            searchResult = await _service.SearchFiles(searchText.Replace(" ", "+"), _searchType.GetDisplayDescription(), "all");
+            searchIsBusy = false;
+            StateHasChanged();
+
+            if (searchResult != null)
+            {
+                // Cancel existing auto-refresh if any
+                _cts?.Cancel();
+                _cts?.Dispose();
+
+                // Start new auto-refresh
+                _cts = new CancellationTokenSource();
+                _ = AutoRefresh(_cts.Token);
+
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Info,
+                        Summary = "Search in progress",
+                        Detail = $"Searching ... Auto Refresh activated",
+                        Duration = 4000
+
+                    });
+
+            }
+            else
+            {
+                NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Fail search file",
+                        Detail = $"Error in searching: check the log.",
+                        Duration = 4000
+
+                    });
+            }
+        }
+    }
+
+    protected async Task RefreshSearchResult()
+    {
+        searchResult = await _service.RefreshSearch();
+        StateHasChanged();
+    }
+
+    protected async Task DownloadFile()
+    {
+        // await _service.AddEd2kLink(link);
+        var result = await _service.DownloadSearch(selectedFile[0].SearchId);
+
+        NavManager.NavigateTo("downloading");
+
+        if (!string.IsNullOrEmpty(result))
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Download file",
+                    Detail = $"File {selectedFile[0].FileName} in download",
+                    Duration = 4000
+
+                });
+        }
+        else
+        {
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Fail download file",
+                    Detail = $"Error in downloading file: check the log.",
+                    Duration = 4000
+
+                });
+        }
+    }
+
+    protected async Task AutoRefresh(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(5000, cancellationToken);
+
+                searchResult = await _service.SearchFiles(searchText.Replace(" ", "+"), _searchType.GetDisplayDescription(), "all");
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when component is disposed or new search is initiated
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

@@ -1,0 +1,85 @@
+﻿using AmuleRemoteControl.Components.Data;
+using Android.App;
+using Android.Content;
+using Android.Content.PM;
+using Android.OS;
+using Plugin.Fingerprint;
+
+namespace AmuleRemoteControl;
+
+[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation
+        | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density,
+        LaunchMode = LaunchMode.SingleInstance)]
+    [IntentFilter(
+        new[] { Intent.ActionSend, Intent.ActionView },
+        Categories = new[] { Intent.CategoryDefault, Intent.CategoryBrowsable },
+        DataScheme = "ed2k",
+        AutoVerify = true)]
+    public class MainActivity : MauiAppCompatActivity
+    {
+
+        protected override void OnCreate(Bundle? savedInstanceState)
+        {
+            base.OnCreate(savedInstanceState);
+            CrossFingerprint.SetCurrentActivityResolver(() => this);
+
+            //if (Intent?.Data != null)
+            //{
+            //    Console.WriteLine("OnCreate-Bundle: Intent present: " + Intent.ActionView.ToString() +" - " + Intent.Data.ToString() );
+            //}
+            //else
+            //{
+            //    Console.WriteLine("OnCreate-Bundle: Intent is null");
+            //}
+
+            var action = Intent?.Action;
+            var data = Intent?.Data?.ToString();
+
+            if (action == Intent.ActionView && data is not null)
+            {
+                HandleAppLink(data);
+            }
+            else
+            {
+                var ed2kUrlService = IPlatformApplication.Current?.Services.GetService<Ed2kUrl>();
+                if (ed2kUrlService != null)
+                {
+                    ed2kUrlService.UrlData = null;
+                }
+            }
+
+        }
+
+
+        protected override void OnNewIntent(Intent? intent)
+        {
+            base.OnNewIntent(intent);
+
+            Intent = intent;
+            var action = Intent?.Action;
+            var data = Intent?.Data?.ToString();
+
+            if (action == Intent.ActionView && data is not null)
+            {
+                HandleAppLink(data);
+            }
+        }
+
+
+        void HandleAppLink(string url)
+        {
+            //if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
+            //    App.Current?.SendOnAppLinkRequestReceived(uri);
+            //Console.WriteLine("URL= " + url);
+            //App.Current.MainPage.Navigation.PushModalAsync(new MainPage(url));
+
+            var ed2kUrlService = IPlatformApplication.Current?.Services.GetService<Ed2kUrl>();
+            if (ed2kUrlService != null)
+            {
+                ed2kUrlService.UrlData = System.Web.HttpUtility.UrlDecode(url);
+            }
+
+            App.Current.MainPage.Navigation.PushModalAsync(new MainPage());
+        }
+
+    }
