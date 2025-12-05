@@ -1,6 +1,7 @@
 ﻿@page "/server"
 @using AmuleRemoteControl.Components.Data.AmuleModel
 @using AmuleRemoteControl.Components.Interfaces
+@implements IDisposable
 
 @if (_accessService.IsAuthorized)
 {

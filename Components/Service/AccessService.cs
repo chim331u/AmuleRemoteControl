@@ -6,13 +6,45 @@ namespace AmuleRemoteControl.Components.Service
 {
     public class AccessService : IAccessService
     {
-        public bool IsAuthorized { get => isAuthorized; set { isAuthorized = value; NotifyStateChanged(); } }
+        /// <summary>
+        /// Thread safety lock object for IsAuthorized property.
+        /// Prevents race conditions when multiple threads check or modify authorization state.
+        /// </summary>
+        private readonly object _authLock = new object();
 
         private bool isAuthorized;
 
-        public event Action? OnChange;
+        /// <summary>
+        /// Gets or sets the authorization status. Thread-safe via lock.
+        /// Setting this property triggers the OnChange event.
+        /// </summary>
+        public bool IsAuthorized
+        {
+            get
+            {
+                lock (_authLock)
+                {
+                    return isAuthorized;
+                }
+            }
+            set
+            {
+                lock (_authLock)
+                {
+                    isAuthorized = value;
+                    // Fire event inside lock to ensure consistency
+                    NotifyStateChanged();
+                }
+            }
+        }
 
-        private void NotifyStateChanged() => OnChange?.Invoke();
+        /// <summary>
+        /// Event fired when authorization status changes.
+        /// Follows standard EventHandler pattern for consistency across the application.
+        /// </summary>
+        public event EventHandler? OnChange;
+
+        private void NotifyStateChanged() => OnChange?.Invoke(this, EventArgs.Empty);
 
         ILogger<AccessService> _logger;
 

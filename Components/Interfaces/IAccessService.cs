@@ -5,10 +5,12 @@ namespace AmuleRemoteControl.Components.Interfaces
     public interface IAccessService
     {
         bool IsAuthorized { get; set; }
-        event Action? OnChange;
+        /// <summary>
+        /// Event fired when authorization status changes.
+        /// Follows standard EventHandler pattern.
+        /// </summary>
+        event EventHandler? OnChange;
         Task<string> CheckUrl();
-        //Task<bool> LoggedIn();
-        //Task<bool> LoggedIn(string psw);
         Task<bool> LoggedIn(LoginData loginData);
         Task LoggedOut();
     }

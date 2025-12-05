@@ -12,28 +12,61 @@ namespace AmuleRemoteControl.Components.Service
         INetworkHelper networkHelperServices)
         : IAmuleRemoteServices
     {
+        /// <summary>
+        /// Thread safety lock object for all state properties.
+        /// Prevents race conditions when multiple threads access Status or DownSpeed simultaneously.
+        /// </summary>
+        private readonly object _statusLock = new object();
 
         public event EventHandler? StatusChanged;
         private Stats? _status;
+        /// <summary>
+        /// Gets or sets the current aMule statistics. Thread-safe via lock.
+        /// Setting this property triggers the StatusChanged event.
+        /// </summary>
         public Stats? Status
         {
-            get => _status;
+            get
+            {
+                lock (_statusLock)
+                {
+                    return _status;
+                }
+            }
             set
             {
-                _status = value;
-                this.StatusChanged?.Invoke(this, EventArgs.Empty);
+                lock (_statusLock)
+                {
+                    _status = value;
+                    // Fire event inside lock to ensure consistency
+                    this.StatusChanged?.Invoke(this, EventArgs.Empty);
+                }
             }
         }
 
         public event EventHandler? DownChanged;
         private string? _downSpeed;
+        /// <summary>
+        /// Gets or sets the total download speed. Thread-safe via lock.
+        /// Setting this property triggers the DownChanged event.
+        /// </summary>
         public string? DownSpeed
         {
-            get => _downSpeed;
+            get
+            {
+                lock (_statusLock)
+                {
+                    return _downSpeed;
+                }
+            }
             set
             {
-                _downSpeed = value;
-                this.DownChanged?.Invoke(this, EventArgs.Empty);
+                lock (_statusLock)
+                {
+                    _downSpeed = value;
+                    // Fire event inside lock to ensure consistency
+                    this.DownChanged?.Invoke(this, EventArgs.Empty);
+                }
             }
         }
 
@@ -80,7 +113,8 @@ namespace AmuleRemoteControl.Components.Service
 
             double totalSpeed = speeds.Sum(item => GetSpeed(item));
 
-            DownSpeed = $" {totalSpeed.ToString("N2", CultureInfo.CreateSpecificCulture("it-IT"))} kb/s";
+            // Use current culture set by ICultureProvider
+            DownSpeed = $" {totalSpeed.ToString("N2", CultureInfo.CurrentCulture)} kb/s";
 
         }
 
@@ -136,6 +170,35 @@ namespace AmuleRemoteControl.Components.Service
 
         public async Task<List<DownloadFile>> PostDownloadCommand(string fileId, string command)
         {
+            // Input validation for fileId
+            if (string.IsNullOrWhiteSpace(fileId))
+            {
+                _logger.LogWarning("PostDownloadCommand: fileId is null or empty");
+                return null;
+            }
+
+            // Validate fileId is numeric (aMule uses numeric IDs)
+            if (!long.TryParse(fileId, out _))
+            {
+                _logger.LogWarning($"PostDownloadCommand: Invalid fileId format '{fileId}' - must be numeric");
+                return null;
+            }
+
+            // Input validation for command
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                _logger.LogWarning("PostDownloadCommand: command is null or empty");
+                return null;
+            }
+
+            // Validate command is in allowed list
+            var allowedCommands = new[] { "pause", "resume", "delete", "cancel", "priority" };
+            if (!allowedCommands.Contains(command.ToLower()))
+            {
+                _logger.LogWarning($"PostDownloadCommand: Invalid command '{command}' - allowed: {string.Join(", ", allowedCommands)}");
+                return null;
+            }
+
             var param = new Dictionary<string, string>();
             param.Add(fileId, "on");
             param.Add("category", "all");
@@ -153,6 +216,38 @@ namespace AmuleRemoteControl.Components.Service
 
         public async Task<List<DownloadFile>> PostDownloadCommand(List<string> filesId, string command)
         {
+            // Input validation for filesId list
+            if (filesId == null || filesId.Count == 0)
+            {
+                _logger.LogWarning("PostDownloadCommand: filesId list is null or empty");
+                return null;
+            }
+
+            // Validate each fileId is numeric
+            foreach (var fileId in filesId)
+            {
+                if (string.IsNullOrWhiteSpace(fileId) || !long.TryParse(fileId, out _))
+                {
+                    _logger.LogWarning($"PostDownloadCommand: Invalid fileId format '{fileId}' in list - must be numeric");
+                    return null;
+                }
+            }
+
+            // Input validation for command
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                _logger.LogWarning("PostDownloadCommand: command is null or empty");
+                return null;
+            }
+
+            // Validate command is in allowed list
+            var allowedCommands = new[] { "pause", "resume", "delete", "cancel", "priority" };
+            if (!allowedCommands.Contains(command.ToLower()))
+            {
+                _logger.LogWarning($"PostDownloadCommand: Invalid command '{command}' - allowed: {string.Join(", ", allowedCommands)}");
+                return null;
+            }
+
             var param = new Dictionary<string, string>();
 
             foreach (var fileId in filesId)
@@ -565,6 +660,26 @@ namespace AmuleRemoteControl.Components.Service
             //search type:
             //Global, Local, Kad
 
+            // Input validation for searchText
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                _logger.LogWarning("SearchFiles: searchText is null or empty");
+                return new List<Search>(); // Return empty list instead of null for better UX
+            }
+
+            // Validate maximum length to prevent abuse
+            const int MAX_SEARCH_LENGTH = 100;
+            if (searchText.Length > MAX_SEARCH_LENGTH)
+            {
+                _logger.LogWarning($"SearchFiles: searchText exceeds maximum length of {MAX_SEARCH_LENGTH} characters");
+                return new List<Search>();
+            }
+
+            // HTML encode searchText to prevent XSS attacks
+            // This is important because the search text will be sent to aMule web interface
+            string sanitizedSearchText = System.Web.HttpUtility.HtmlEncode(searchText);
+
+            _logger.LogInformation($"SearchFiles: Searching for '{sanitizedSearchText}' (original length: {searchText.Length})");
 
             if (string.IsNullOrEmpty(targetCat))
             {
@@ -574,7 +689,7 @@ namespace AmuleRemoteControl.Components.Service
             //command=search&searchval=ligabue&Search=Search&avail=&minsize=&minsizeu=MByte&searchtype=Local&maxsize=&maxsizeu=MByte&targetcat=all
             var param = new Dictionary<string, string>();
             param.Add("command", "search");
-            param.Add("searchval", searchText);
+            param.Add("searchval", sanitizedSearchText);
             param.Add("Search", "Search");
             param.Add("avail", "");
             param.Add("minsize", "");
@@ -585,7 +700,7 @@ namespace AmuleRemoteControl.Components.Service
             param.Add("targetcat", targetCat);
 
             var listSearch = ParseSearch(await _networkHelperServices.PostRequest(SearchPage, param));
-            return listSearch;
+            return listSearch ?? new List<Search>(); // Ensure we always return a list, never null
         }
 
         public async Task<List<Search>> RefreshSearch()

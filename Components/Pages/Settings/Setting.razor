@@ -96,6 +96,28 @@
                 </RadzenTabs>
             }
         </RadzenTabsItem>
+        <RadzenTabsItem Text="Application">
+            <RadzenStack Gap="1rem" class="rz-p-4">
+                <RadzenFieldset Text="Language & Region">
+                    <RadzenStack Gap="1rem">
+                        <RadzenFormField Text="Application Language" Variant="Variant.Outlined">
+                            <RadzenDropDown @bind-Value="@selectedCulture"
+                                            Data="@availableCultures"
+                                            TextProperty="DisplayName"
+                                            ValueProperty="Name"
+                                            Change="@OnCultureChanged"
+                                            Style="width: 100%;" />
+                        </RadzenFormField>
+                        <RadzenText TextStyle="TextStyle.Caption" class="rz-color-info-light">
+                            Changes the number formatting, date formatting, and currency display throughout the application.
+                        </RadzenText>
+                        <RadzenText TextStyle="TextStyle.Body2">
+                            <strong>Current Culture:</strong> @_cultureProvider?.GetCulture().DisplayName
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenStack>
+        </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
 
@@ -105,6 +127,8 @@
     public IUtilityServices? _utilityController { get; set; }
     [Inject]
     public ILogger<string>? _logger { get; set; }
+    [Inject]
+    public ICultureProvider? _cultureProvider { get; set; }
 
     IList<NetworkSetting>? settingList;
 
@@ -112,9 +136,64 @@
 
     bool addNew = false;
 
+    // Culture selection fields
+    string? selectedCulture;
+    List<CultureInfo> availableCultures = new();
+
     protected override void OnInitialized()
     {
         settingList = _utilityController.ReadNetworkSettingJson().OrderByDescending(x => x.IsActive).ToList();
+
+        // Initialize culture selection
+        if (_cultureProvider != null)
+        {
+            var supportedCultures = _cultureProvider.GetSupportedCultures();
+            availableCultures = supportedCultures
+                .Select(c => new CultureInfo { Name = c, DisplayName = _cultureProvider.GetCultureDisplayName(c) })
+                .ToList();
+
+            selectedCulture = _cultureProvider.GetCulture().Name;
+        }
+    }
+
+    private void OnCultureChanged(object value)
+    {
+        if (value is string cultureName && _cultureProvider != null)
+        {
+            try
+            {
+                _cultureProvider.SetCulture(cultureName);
+
+                NotificationService?.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Language Changed",
+                    Detail = $"Application language changed to {_cultureProvider.GetCulture().DisplayName}",
+                    Duration = 4000
+                });
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Failed to change culture");
+
+                NotificationService?.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Language Change Failed",
+                    Detail = $"Failed to change language: {ex.Message}",
+                    Duration = 4000
+                });
+            }
+        }
+    }
+
+    // Helper class for culture dropdown
+    public class CultureInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
     }
 
     private void SaveSetting(NetworkSetting setting)

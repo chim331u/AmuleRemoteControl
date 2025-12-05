@@ -7,28 +7,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 AmuleRemoteGui (Mule Remote) is a .NET MAUI Blazor Hybrid application that provides remote control for aMule P2P file-sharing servers. The app runs on Android (primary) and Windows, allowing users to manage downloads, uploads, searches, and server connections through a mobile interface.
 
 **Key Technology Stack:**
-- .NET 9.0 (net9.0-android)
+- .NET 10.0 (net10.0-android primary target)
 - MAUI Blazor Hybrid (Razor components hosted in WebView)
-- Radzen.Blazor 7.1.3 (UI component library)
-- HtmlAgilityPack (HTML parsing for aMule web interface)
-- Serilog (logging)
-- Plugin.Fingerprint (biometric authentication)
+- Radzen.Blazor 8.3.6 (UI component library)
+- HtmlAgilityPack 1.12.4 (HTML parsing for aMule web interface)
+- Serilog 4.3.0 (logging with file sink)
+- Plugin.Fingerprint 2.1.5 (biometric authentication)
 
 ## Build & Run Commands
 
 ### Build for Android
 ```bash
-dotnet build -f net9.0-android
+dotnet build -f net10.0-android
+```
+
+### Build for iOS (on macOS only)
+```bash
+dotnet build -f net10.0-ios
+```
+
+### Build for macOS Catalyst (on macOS only)
+```bash
+dotnet build -f net10.0-maccatalyst
 ```
 
 ### Build for Windows (on Windows machines only)
 ```bash
-dotnet build -f net8.0-windows10.0.19041.0
+dotnet build -f net10.0-windows10.0.19041.0
 ```
 
 ### Run on Android Emulator/Device
 ```bash
-dotnet build -t:Run -f net9.0-android
+dotnet build -t:Run -f net10.0-android
 ```
 
 ### Clean Build
@@ -87,10 +97,12 @@ All services are **Scoped** unless noted otherwise. Registration in `MauiProgram
    - Storage location: `FileSystem.AppDataDirectory/[SettingName].json`
 
 4. **INetworkHelper** (`NetworkHelper`)
-   - HTTP client management
+   - HTTP client management via IHttpClientFactory
    - GET/POST request handling with gzip decompression
    - Query parameter encoding
    - Returns HTML responses as strings
+   - Configured with 30-second timeout
+   - Automatic decompression: GZip | Deflate
 
 5. **SessionStorageAccessor**
    - JavaScript interop for browser sessionStorage
@@ -101,6 +113,16 @@ All services are **Scoped** unless noted otherwise. Registration in `MauiProgram
    - Global state for deep-linked ed2k:// URLs
    - Property: `ed2kUrlData` (string)
    - Used by Android deep linking integration
+
+7. **Radzen Services** (Scoped)
+   - `DialogService`: Modal dialogs and confirmations
+   - `NotificationService`: Toast notifications
+   - `TooltipService`: Tooltip management
+   - `ContextMenuService`: Context menu handling
+
+8. **IFingerprint** (Singleton)
+   - Biometric authentication via Plugin.Fingerprint
+   - Registered as `CrossFingerprint.Current`
 
 ### Directory Structure
 
@@ -156,21 +178,42 @@ AmuleRemoteGui/
 - Culture-aware number parsing respects CurrentCulture
 
 ### 2. State Management Pattern
-- **Property with Event** pattern (not MVVM/Flux):
+- **Property with Event** pattern (not MVVM/Flux) with **Thread Safety** (v2.1+):
   ```csharp
+  // Thread-safe lock object
+  private readonly object _statusLock = new object();
+
   public Stats? Status
   {
-      get => _status;
+      get
+      {
+          lock (_statusLock)
+          {
+              return _status;
+          }
+      }
       set
       {
-          _status = value;
-          this.StatusChanged?.Invoke(this, EventArgs.Empty);
+          lock (_statusLock)
+          {
+              _status = value;
+              // Fire event inside lock to ensure consistency
+              this.StatusChanged?.Invoke(this, EventArgs.Empty);
+          }
       }
   }
   public event EventHandler? StatusChanged;
   ```
+- **Standard Event Pattern:** All events use `EventHandler?` (not `Action?`)
+  - Event signature: `public event EventHandler? EventName;`
+  - Invocation: `EventName?.Invoke(this, EventArgs.Empty);`
+  - Subscribers: `service.EventName += OnEventHandler;` where handler is `void OnEventHandler(object? sender, EventArgs e)`
+- **Thread Safety:** All state properties use lock objects to prevent race conditions
+  - Each service has a dedicated lock object (e.g., `_statusLock`, `_authLock`)
+  - Both getter and setter are protected by locks
+  - Events are fired inside the lock to ensure atomic state changes
 - Components subscribe to service events
-- Call `StateHasChanged()` when events fire
+- Call `StateHasChanged()` when events fire, wrapped in `InvokeAsync()` for thread safety
 - No centralized state store
 
 ### 3. Multi-Profile Network Configuration
@@ -278,8 +321,9 @@ Password sent as query parameter over HTTP (LAN security model).
 
 ## Target Platforms
 
-- **Primary**: Android 35 (net9.0-android)
-- **Secondary**: Windows 10.0.19041.0 (net8.0-windows10.0.19041.0)
-- **Potential**: Tizen (commented out in csproj)
+- **Primary**: Android 24+ (net10.0-android, minimum SDK 24)
+- **Secondary**: Windows 10.0.17763.0+ (net10.0-windows10.0.19041.0)
+- **Additional**: iOS 15.0+ (net10.0-ios), macOS Catalyst 15.0+ (net10.0-maccatalyst)
 
-Build commands must specify `-f` flag for target framework.
+Build commands must specify `-f` flag for target framework. iOS and macOS Catalyst builds require macOS development environment.
+- After sprint completition, updated MasterPlan.md

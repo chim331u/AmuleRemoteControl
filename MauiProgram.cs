@@ -27,6 +27,10 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton(typeof(IFingerprint), CrossFingerprint.Current);
+
+            // Register CultureProvider as singleton to manage application culture
+            builder.Services.AddSingleton<ICultureProvider, CultureProvider>();
+
             builder.Services.AddScoped<SessionStorageAccessor>();
             builder.Services.AddScoped<DialogService>();
             builder.Services.AddScoped<NotificationService>();

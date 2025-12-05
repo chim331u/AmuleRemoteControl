@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:AmuleRemoteControl"
              xmlns:components="clr-namespace:AmuleRemoteControl.Components"
              x:Class="AmuleRemoteControl.MainPage"
-             BackgroundColor="{DynamicResource PageBackgroundColor}">
+             BackgroundColor="{DynamicResource PageBackgroundColor}" 
+             SafeAreaEdges="All">
 
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>

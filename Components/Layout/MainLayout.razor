@@ -110,13 +110,18 @@
     [Inject]
     public IAmuleRemoteServices _service { get; set; }
 
+    [Inject]
+    public ICultureProvider _cultureProvider { get; set; }
+
     // Stats? stat = new Stats();
     protected override void OnInitialized()
     {
-        _accessService.OnChange += StateHasChanged;
+        _accessService.OnChange += this.OnAuthChanged;
         _service.StatusChanged += this.OnStateChanged;
         _service.DownChanged += this.OnDownChanged;
-        System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("it-IT");
+
+        // Culture is now managed by ICultureProvider and applied automatically
+        // No need to set it here as CultureProvider sets it in its constructor
     }
 
     // protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -134,9 +139,12 @@
     private void OnDownChanged(object? sender, EventArgs e)
         => this.InvokeAsync(StateHasChanged);
 
+    private void OnAuthChanged(object? sender, EventArgs e)
+        => this.InvokeAsync(StateHasChanged);
+
     public void Dispose()
     {
-        _accessService.OnChange -= StateHasChanged;
+        _accessService.OnChange -= OnAuthChanged;
         _service.StatusChanged -= OnStateChanged;
         _service.DownChanged -= OnDownChanged;
     }

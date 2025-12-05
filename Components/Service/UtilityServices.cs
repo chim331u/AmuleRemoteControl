@@ -39,6 +39,109 @@ namespace AmuleRemoteControl.Components.Service
             SetApiUrl();
         }
 
+        #region Atomic File Operations
+
+        /// <summary>
+        /// Writes JSON data to a file atomically to prevent corruption during write operations.
+        /// Uses a temporary file and atomic move operation to ensure data integrity.
+        /// </summary>
+        /// <typeparam name="T">The type of object to serialize</typeparam>
+        /// <param name="targetPath">The full path where the file should be written</param>
+        /// <param name="data">The object to serialize and write</param>
+        /// <returns>True if the write was successful, false otherwise</returns>
+        /// <remarks>
+        /// This method prevents file corruption by:
+        /// 1. Writing to a temporary file first
+        /// 2. Using File.Move with overwrite to atomically replace the target file
+        /// 3. Cleaning up the temporary file in case of errors
+        /// Thread-safe: Multiple calls with different target paths are safe.
+        /// Same target path from multiple threads may result in race conditions.
+        /// </remarks>
+        private bool WriteJsonAtomically<T>(string targetPath, T data)
+        {
+            if (string.IsNullOrEmpty(targetPath))
+            {
+                _logger.LogError("WriteJsonAtomically: Target path cannot be null or empty");
+                return false;
+            }
+
+            if (data == null)
+            {
+                _logger.LogError("WriteJsonAtomically: Data cannot be null");
+                return false;
+            }
+
+            string? tempFilePath = null;
+
+            try
+            {
+                // Step 1: Generate temporary file path in the same directory as target
+                // This ensures we're on the same filesystem for atomic move
+                string targetDirectory = Path.GetDirectoryName(targetPath) ?? FileSystem.Current.AppDataDirectory;
+                tempFilePath = Path.Combine(targetDirectory, $"{Path.GetFileName(targetPath)}.tmp.{Guid.NewGuid():N}");
+
+                _logger.LogDebug($"WriteJsonAtomically: Writing to temp file: {tempFilePath}");
+
+                // Step 2: Serialize and write to temporary file
+                string jsonContent = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                {
+                    WriteIndented = true // Makes the JSON human-readable for debugging
+                });
+
+                File.WriteAllText(tempFilePath, jsonContent);
+
+                _logger.LogDebug($"WriteJsonAtomically: Successfully wrote {jsonContent.Length} characters to temp file");
+
+                // Step 3: Atomic move operation - this is the key to preventing corruption
+                // File.Move with overwrite=true is atomic on most filesystems
+                File.Move(tempFilePath, targetPath, overwrite: true);
+
+                _logger.LogInformation($"WriteJsonAtomically: Successfully wrote file atomically to {Path.GetFileName(targetPath)}");
+
+                return true;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogError($"WriteJsonAtomically: Access denied writing to {targetPath}: {ex.Message}");
+                return false;
+            }
+            catch (IOException ex)
+            {
+                _logger.LogError($"WriteJsonAtomically: IO error writing to {targetPath}: {ex.Message}");
+                return false;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError($"WriteJsonAtomically: JSON serialization error for {targetPath}: {ex.Message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"WriteJsonAtomically: Unexpected error writing to {targetPath}: {ex.Message}");
+                return false;
+            }
+            finally
+            {
+                // Step 4: Clean up temporary file if it still exists
+                // This handles the case where Move() failed
+                if (tempFilePath != null && File.Exists(tempFilePath))
+                {
+                    try
+                    {
+                        File.Delete(tempFilePath);
+                        _logger.LogDebug($"WriteJsonAtomically: Cleaned up temp file {tempFilePath}");
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        // Log but don't fail the operation - temp file cleanup is best-effort
+                        _logger.LogWarning($"WriteJsonAtomically: Failed to delete temp file {tempFilePath}: {cleanupEx.Message}");
+                    }
+                }
+            }
+        }
+
+        #endregion
+
         #region Format
 
         public string FormatAsEUR(object value)
@@ -48,7 +151,8 @@ namespace AmuleRemoteControl.Components.Service
                 return "00";
             }
 
-            return ((double)value).ToString("C0", CultureInfo.CreateSpecificCulture("it-IT"));
+            // Use current culture set by ICultureProvider
+            return ((double)value).ToString("C0", CultureInfo.CurrentCulture);
         }
 
         public string FormatAsGeneral(string value)
@@ -61,7 +165,8 @@ namespace AmuleRemoteControl.Components.Service
             try
             {
                 var number = Convert.ToDouble(value);
-                return number.ToString("N0", CultureInfo.CreateSpecificCulture("it-IT"));
+                // Use current culture set by ICultureProvider
+                return number.ToString("N0", CultureInfo.CurrentCulture);
             }
             catch (Exception ex)
             {
@@ -69,8 +174,6 @@ namespace AmuleRemoteControl.Components.Service
 
                 return value;
             }
-
-
         }
 
         public string FormatAsDate(object value)
@@ -88,18 +191,15 @@ namespace AmuleRemoteControl.Components.Service
             switch (currency)
             {
                 case "EUR":
-                    return ((double)amountValue).ToString("C0", CultureInfo.CreateSpecificCulture("it-IT"));
+                    // Use current culture set by ICultureProvider
+                    return ((double)amountValue).ToString("C0", CultureInfo.CurrentCulture);
 
                 case "CHF":
                     return ((double)amountValue).ToString("C0", CultureInfo.CreateSpecificCulture("ch-CH"));
 
-
                 default:
                     return ((double)amountValue).ToString("C0", CultureInfo.CreateSpecificCulture("us-US"));
-
             }
-
-
         }
 
         public string FileSizeFormatted(double len)
@@ -162,18 +262,15 @@ namespace AmuleRemoteControl.Components.Service
                 return false;
             }
 
-            try
+            // Use atomic write to prevent corruption
+            bool success = WriteJsonAtomically(NetworkSettingFullPath, settings);
+
+            if (success)
             {
-                File.WriteAllText(NetworkSettingFullPath, JsonSerializer.Serialize(settings));
-                _logger.LogInformation($"Network Setting file saved");
                 SetApiUrl();
-                return true;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error saving Network Setting file: {ex.Message}");
-                return false;
-            }
+
+            return success;
         }
 
         public string SetApiUrl()
@@ -288,9 +385,8 @@ namespace AmuleRemoteControl.Components.Service
                     _customSettings.Add(new GlobalSetting { Key = "LastLoginDateTime", Value = lastLoginDateTime.ToString() });
                 }
 
-                File.WriteAllText(customSettingFullPath, JsonSerializer.Serialize(_customSettings));
-                _logger.LogInformation($"Last login saved");
-                return true;
+                // Use atomic write to prevent corruption
+                return WriteJsonAtomically(customSettingFullPath, _customSettings);
             }
             catch (Exception ex)
             {
@@ -348,19 +444,16 @@ namespace AmuleRemoteControl.Components.Service
                 return false;
             }
 
-            try
+            // Use atomic write to prevent corruption
+            bool success = WriteJsonAtomically(globalSettingFullPath, globalSettings);
+
+            if (success)
             {
-                File.WriteAllText(globalSettingFullPath, JsonSerializer.Serialize(globalSettings));
-                _logger.LogInformation($"Global settings file saved");
                 SetNetworkSettingFullPath();
                 SetApiUrl();
-                return true;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error saving Global Settings file: {ex.Message}");
-                return false;
-            }
+
+            return success;
         }        
         
         public bool WriteCustomSettingJson(IList<GlobalSetting> globalSettings)
@@ -371,17 +464,8 @@ namespace AmuleRemoteControl.Components.Service
                 return false;
             }
 
-            try
-            {
-                File.WriteAllText(customSettingFullPath, JsonSerializer.Serialize(globalSettings));
-                _logger.LogInformation($"Custom settings file saved");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error saving Custom Settings file: {ex.Message}");
-                return false;
-            }
+            // Use atomic write to prevent corruption
+            return WriteJsonAtomically(customSettingFullPath, globalSettings);
         }
 
         private IList<GlobalSetting> CreateDefaultGlobalSetting()
@@ -417,18 +501,8 @@ namespace AmuleRemoteControl.Components.Service
                 return false;
             }
 
-            try
-            {
-                File.WriteAllText(LoginSettingFullPath, JsonSerializer.Serialize(settings));
-                _logger.LogInformation($"Login file saved");
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error saving Login file: {ex.Message}");
-                return false;
-            }
+            // Use atomic write to prevent corruption
+            return WriteJsonAtomically(LoginSettingFullPath, settings);
         }
 
         public async Task<bool> WriteLoginSettingData(LoginData loginData)
@@ -449,21 +523,10 @@ namespace AmuleRemoteControl.Components.Service
                         loginData.Password = string.Empty;
                     }
                 }
-                _logger.LogInformation("Writing loggin settings on file...");
+                _logger.LogInformation("Writing login settings on file...");
 
-                try
-                {
-                    File.WriteAllText(LoginSettingFullPath, JsonSerializer.Serialize(loginData));
-                    _logger.LogInformation($"Login data saved");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"Error writing file: {ex.Message}");
-                    return false;
-                }                             
-
-
-                return true;
+                // Use atomic write to prevent corruption
+                return WriteJsonAtomically(LoginSettingFullPath, loginData);
             }
             catch (Exception ex)
             {
