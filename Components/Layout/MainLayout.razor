@@ -3,7 +3,7 @@
 
 <RadzenLayout>
     <RadzenHeader>
-        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1px">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="2px">
 
                 @if (_service.Status != null && _service.Status.Ed2kStat != null)
                 {
@@ -70,7 +70,7 @@
         </div>
     </RadzenBody>
     <RadzenFooter>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" JustifyContent="JustifyContent.SpaceBetween" Wrap="FlexWrap.Wrap">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="2rem" JustifyContent="JustifyContent.Center" Wrap="FlexWrap.Wrap">
 
             <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
                          onclick="@(()=> NavigateTo("upload"))">

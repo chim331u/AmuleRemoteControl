@@ -177,28 +177,13 @@ namespace AmuleRemoteControl.Components.Service
                 return null;
             }
 
-            // Validate fileId is numeric (aMule uses numeric IDs)
-            if (!long.TryParse(fileId, out _))
-            {
-                _logger.LogWarning($"PostDownloadCommand: Invalid fileId format '{fileId}' - must be numeric");
-                return null;
-            }
-
             // Input validation for command
             if (string.IsNullOrWhiteSpace(command))
             {
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-
-            // Validate command is in allowed list
-            var allowedCommands = new[] { "pause", "resume", "delete", "cancel", "priority" };
-            if (!allowedCommands.Contains(command.ToLower()))
-            {
-                _logger.LogWarning($"PostDownloadCommand: Invalid command '{command}' - allowed: {string.Join(", ", allowedCommands)}");
-                return null;
-            }
-
+            
             var param = new Dictionary<string, string>();
             param.Add(fileId, "on");
             param.Add("category", "all");
@@ -222,16 +207,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: filesId list is null or empty");
                 return null;
             }
-
-            // Validate each fileId is numeric
-            foreach (var fileId in filesId)
-            {
-                if (string.IsNullOrWhiteSpace(fileId) || !long.TryParse(fileId, out _))
-                {
-                    _logger.LogWarning($"PostDownloadCommand: Invalid fileId format '{fileId}' in list - must be numeric");
-                    return null;
-                }
-            }
+            
 
             // Input validation for command
             if (string.IsNullOrWhiteSpace(command))
@@ -239,15 +215,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-
-            // Validate command is in allowed list
-            var allowedCommands = new[] { "pause", "resume", "delete", "cancel", "priority" };
-            if (!allowedCommands.Contains(command.ToLower()))
-            {
-                _logger.LogWarning($"PostDownloadCommand: Invalid command '{command}' - allowed: {string.Join(", ", allowedCommands)}");
-                return null;
-            }
-
+            
             var param = new Dictionary<string, string>();
 
             foreach (var fileId in filesId)
