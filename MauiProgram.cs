@@ -39,6 +39,7 @@ public static class MauiProgram
             builder.Services.AddScoped<IUtilityServices, UtilityServices>();
             builder.Services.AddScoped<IAmuleRemoteServices, aMuleRemoteService>();
             builder.Services.AddScoped<IAccessService, AccessService>();
+            builder.Services.AddScoped<IEd2kUrlParser, Ed2kUrlParser>(); // Ed2k URL parser for deep linking
             builder.Services.AddSingleton<Ed2kUrl>();
 
             // Configure HttpClient with IHttpClientFactory for NetworkHelper

@@ -23,7 +23,7 @@
         <ApplicationTitle>AmuleRemoteGui</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.amuleremotegui</ApplicationId>
+        <ApplicationId>com.chim.amuleremotegui</ApplicationId>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>2.0</ApplicationDisplayVersion>
