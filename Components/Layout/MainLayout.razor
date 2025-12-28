@@ -113,6 +113,9 @@
     [Inject]
     public ICultureProvider _cultureProvider { get; set; }
 
+    [Inject]
+    public IUtilityServices UtilityServices { get; set; }
+
     // Stats? stat = new Stats();
     protected override void OnInitialized()
     {
@@ -124,14 +127,18 @@
         // No need to set it here as CultureProvider sets it in its constructor
     }
 
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (firstRender)
-    //     {
-
-    //     }
-
-    // }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!UtilityServices.IsOnboardingCompleted())
+            {
+                // Add a small delay to ensure UI is ready
+                await Task.Delay(500);
+                await DialogService.OpenAsync<OnboardingDialog>("Welcome", null, new DialogOptions() { Width = "90%", Height = "auto", CloseDialogOnOverlayClick = false });
+            }
+        }
+    }
 
     private void OnStateChanged(object? sender, EventArgs e)
        => this.InvokeAsync(StateHasChanged);

@@ -436,6 +436,71 @@ namespace AmuleRemoteControl.Components.Service
 
         }
 
+        public bool IsOnboardingCompleted()
+        {
+            if (string.IsNullOrEmpty(customSettingFullPath) || !File.Exists(customSettingFullPath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var _customSettings = JsonSerializer.Deserialize<List<GlobalSetting>>(File.ReadAllText(customSettingFullPath));
+                var _onboarding = _customSettings.FirstOrDefault(x => x.Key.Equals("OnboardingCompleted"));
+                
+                if (_onboarding != null)
+                {
+                    return bool.Parse(_onboarding.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error reading onboarding status: {ex.Message}");
+            }
+
+            return false;
+        }
+
+        public bool SetOnboardingCompleted()
+        {
+            if (string.IsNullOrEmpty(customSettingFullPath))
+            {
+                _logger.LogWarning($"Custom Setting path must be valued");
+                return false;
+            }
+
+            try
+            {
+                List<GlobalSetting> _customSettings;
+                if (File.Exists(customSettingFullPath))
+                {
+                    _customSettings = JsonSerializer.Deserialize<List<GlobalSetting>>(File.ReadAllText(customSettingFullPath));
+                }
+                else
+                {
+                    _customSettings = new List<GlobalSetting>();
+                }
+
+                var _onboarding = _customSettings.FirstOrDefault(x => x.Key.Equals("OnboardingCompleted"));
+                if (_onboarding != null)
+                {
+                    _onboarding.Value = "true";
+                }
+                else
+                {
+                    _customSettings.Add(new GlobalSetting { Key = "OnboardingCompleted", Value = "true" });
+                }
+
+                // Use atomic write to prevent corruption
+                return WriteJsonAtomically(customSettingFullPath, _customSettings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error saving onboarding status: {ex.Message}");
+                return false;
+            }
+        }
+
         public bool WriteGlobalSettingJson(IList<GlobalSetting> globalSettings)
         {
             if (string.IsNullOrEmpty(globalSettingFullPath))
@@ -485,6 +550,7 @@ namespace AmuleRemoteControl.Components.Service
             var _globalSettings = new List<GlobalSetting>();
 
             _globalSettings.Add(new GlobalSetting { Key = "LastLoginDateTime", Value = DateTime.MinValue.ToString() });
+            _globalSettings.Add(new GlobalSetting { Key = "OnboardingCompleted", Value = "false" });
 
             _logger.LogInformation($"Created Custom setting file");
             return _globalSettings;

@@ -1,0 +1,110 @@
+@using AmuleRemoteControl.Components.Interfaces
+@inject DialogService DialogService
+@inject IUtilityServices UtilityServices
+@inject NavigationManager navManager
+
+<RadzenStack Style="width: 100%; max-width: 600px; padding: 10px;">
+    <RadzenSteps ShowSteps="true" ShowPrevious="true">
+        <Steps>
+            <!-- Step 1: Welcome -->
+            <RadzenStepsItem Text="Welcome">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-p-4">
+                    <RadzenImage Path="Images/amule-logo-green.png" Style="width: 80px;" />
+                    <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center">Welcome to Amule Remote</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" TextAlign="TextAlign.Center">
+                        Control your aMule server from anywhere, right from your device.
+                    </RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" Class="rz-color-secondary-text">
+                        Let's get you set up in just a few steps.
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenStepsItem>
+
+            <!-- Step 2: Connection -->
+            <RadzenStepsItem Text="Connection">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-p-4">
+                    <RadzenIcon Icon="dns" Style="font-size: 48px; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">Connect to your Server</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" TextAlign="TextAlign.Center">
+                        To use this app, you need to configure the connection details for your aMule Web Interface (IP, Port, Password).
+                    </RadzenText>
+                    <RadzenButton Icon="settings" Text="Configure Now" ButtonStyle="ButtonStyle.Secondary" Click="@NavigateToSettings" />
+                </RadzenStack>
+            </RadzenStepsItem>
+
+            <!-- Step 3: Deep Links -->
+            <RadzenStepsItem Text="Deep Links">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-p-4">
+                    <RadzenIcon Icon="add_link" Style="font-size: 48px; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">Seamless Integration</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" TextAlign="TextAlign.Center">
+                        Click any <strong>ed2k://</strong> link on your device, and this app will automatically open to handle the download.
+                    </RadzenText>
+                    <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" Variant="Variant.Flat" Shade="Shade.Light">
+                        Amule Remote works with your browser and other apps.
+                    </RadzenAlert>
+                </RadzenStack>
+            </RadzenStepsItem>
+
+            <!-- Step 4: Navigation -->
+            <RadzenStepsItem Text="Navigation">
+                 <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-p-4">
+                    <RadzenIcon Icon="navigation" Style="font-size: 48px; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center">Finding your way</RadzenText>
+                     <RadzenStack Gap="1rem" Style="width: 100%;">
+                        <RadzenCard Variant="Variant.Flat" >
+                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                <RadzenIcon Icon="menu" />
+                                <RadzenText TextStyle="TextStyle.Body2"><strong>Bottom Menu:</strong> Switch between Download, Search, Server, and Uploads.</RadzenText>
+                             </RadzenStack>
+                        </RadzenCard>
+                        <RadzenCard Variant="Variant.Flat" >
+                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                <RadzenIcon Icon="account_circle" />
+                                <RadzenText TextStyle="TextStyle.Body2"><strong>Top Menu:</strong> Access Settings, Logs, and Profile.</RadzenText>
+                             </RadzenStack>
+                        </RadzenCard>
+                     </RadzenStack>
+                </RadzenStack>
+            </RadzenStepsItem>
+
+            <!-- Step 5: Finish -->
+            <RadzenStepsItem Text="Finish">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" Class="rz-p-4">
+                    <RadzenIcon Icon="check_circle" Style="font-size: 64px; color: var(--rz-success);" />
+                    <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center">You're All Set!</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" TextAlign="TextAlign.Center">
+                        You are ready to start managing your downloads.
+                    </RadzenText>
+                    <RadzenCheckBox @bind-Value="dontShowAgain" Name="DontShowAgain" TValue="bool" />
+                    <RadzenLabel Text="Don't show this again" Component="DontShowAgain" Style="margin-left: 8px;" />
+                     <RadzenButton Text="Get Started" Size="ButtonSize.Large" Icon="rocket_launch" Click="@FinishOnboarding" Style="width: 100%; margin-top: 1rem;" />
+                </RadzenStack>
+            </RadzenStepsItem>
+        </Steps>
+    </RadzenSteps>
+</RadzenStack>
+
+@code {
+    bool dontShowAgain = true;
+
+    private void NavigateToSettings()
+    {
+        // For "Configure Now", we assume the user wants to set it up immediately.
+        // We'll mark onboarding as technically "seen" to avoid annoying them on return,
+        // or we could leave it false if we want them to finish the tour later.
+        // Let's set it to true to be safe, as they are now "in" the app.
+        UtilityServices.SetOnboardingCompleted(); 
+        DialogService.Close();
+        navManager.NavigateTo("/setting");
+    }
+
+    private void FinishOnboarding()
+    {
+        if (dontShowAgain)
+        {
+            UtilityServices.SetOnboardingCompleted();
+        }
+        DialogService.Close();
+    }
+}

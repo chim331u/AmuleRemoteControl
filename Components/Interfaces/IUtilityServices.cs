@@ -32,6 +32,9 @@ namespace AmuleRemoteControl.Components.Interfaces
         bool WriteLastLogin(DateTime lastLoginDateTime);
         DateTime ReadLastLogin();
 
+        bool IsOnboardingCompleted();
+        bool SetOnboardingCompleted();
+
         //login setting
         bool WriteLoginSettingJson(IList<GlobalSetting> settings);
         //IList<GlobalSetting> ReadLoginSettingJson();
