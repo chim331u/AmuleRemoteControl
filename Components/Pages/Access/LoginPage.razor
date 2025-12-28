@@ -75,7 +75,7 @@ else
     [Inject]
     public IFingerprint fingerprint { get; set; }
     [Inject]
-    public Ed2kUrl Ed2kUrlService { get; set; }
+    public IDeepLinkService DeepLinkService { get; set; }
 
     LoginData _loginData = new LoginData();
     bool loading = true;
@@ -104,9 +104,10 @@ else
                     Log.Information("Saving login data...");
                     await _utilityService.WriteLoginSettingData(loginData);
 
-                    if (Ed2kUrlService.UrlData != null)
+                    var pendingLink = DeepLinkService.GetPendingLink();
+                    if (pendingLink != null)
                     {
-                        NavManager.NavigateTo("/addlink");
+                        NavManager.NavigateTo($"/addlink?url={Uri.EscapeDataString(pendingLink.Url)}");
                     }
                     else
                     {
@@ -159,9 +160,10 @@ else
                 Log.Information("Saving login data...");
                 await _utilityService.WriteLoginSettingData(_loginData);
 
-                if (Ed2kUrlService.UrlData != null)
+                var pendingLink = DeepLinkService.GetPendingLink();
+                if (pendingLink != null)
                 {
-                    NavManager.NavigateTo("/addlink");
+                    NavManager.NavigateTo($"/addlink?url={Uri.EscapeDataString(pendingLink.Url)}");
                 }
                 else
                 {

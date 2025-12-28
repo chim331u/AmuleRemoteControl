@@ -36,11 +36,12 @@ public static class MauiProgram
             builder.Services.AddScoped<NotificationService>();
             builder.Services.AddScoped<TooltipService>();
             builder.Services.AddScoped<ContextMenuService>();
+            // Register internal services
             builder.Services.AddScoped<IUtilityServices, UtilityServices>();
             builder.Services.AddScoped<IAmuleRemoteServices, aMuleRemoteService>();
             builder.Services.AddScoped<IAccessService, AccessService>();
             builder.Services.AddScoped<IEd2kUrlParser, Ed2kUrlParser>(); // Ed2k URL parser for deep linking
-            builder.Services.AddSingleton<Ed2kUrl>();
+            builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>(); // Event-based deep link service
 
             // Configure HttpClient with IHttpClientFactory for NetworkHelper
             builder.Services.AddHttpClient<INetworkHelper, NetworkHelper>(client =>

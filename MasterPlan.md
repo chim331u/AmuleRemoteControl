@@ -3,7 +3,7 @@
 **Version:** 2.0 → 2.5
 **Duration:** 17 weeks (17 sprints × 1 week)
 **Last Updated:** 2025-12-06
-**Status:** 🚧 In Progress (Sprint 5 Ready)
+**Status:** 🚧 In Progress (Sprint 6 Ready)
 
 ---
 
@@ -32,11 +32,12 @@
 | **Sprint 2** | Phase 1: Critical Fixes | ✅ **COMPLETE** | 2025-12-04 | Thread-safe state management. Standardized EventHandler pattern. Memory leak audit complete. |
 | **Sprint 3** | Phase 1: Critical Fixes | ✅ **COMPLETE** | 2025-12-05 | Atomic file writes implemented. Input validation for SearchFiles and PostDownloadCommand. 83 test cases documented. |
 | **Sprint 4** | Phase 2: Deep Linking | ✅ **COMPLETE** | 2025-12-06 | Ed2k URL parser with comprehensive validation. Result<T> pattern for error handling. Regex-based parsing with security checks. |
-| Sprint 5 | Phase 2: Deep Linking | ⬜ Pending | - | Deep Link Service & Integration |
+| **Sprint 5** | Phase 2: Deep Linking | ✅ **COMPLETE** | 2025-12-27 | Deep Link Service & Integration (Event-driven architecture refactor) |
 
 ### Completed Tasks
 
 **Sprint 1 Deliverables (✅ Complete - 2025-12-04):**
+
 - ✅ Task 1.1: ICultureProvider implementation - removed all hardcoded "it-IT" references
 - ✅ Task 1.2: Culture selection UI with 5 supported languages (en-US, it-IT, de-DE, fr-FR, es-ES)
 - ✅ Task 1.3: Comprehensive testing checklist created (Sprint1_TestChecklist.md)
@@ -45,6 +46,7 @@
 - ✅ Total: 18 hours invested
 
 **Sprint 2 Deliverables (✅ Complete - 2025-12-04):**
+
 - ✅ Task 1.4: Thread-safe state management with lock objects in aMuleRemoteService and AccessService
 - ✅ Task 1.5: Standardized event patterns - all events now use EventHandler? instead of Action?
 - ✅ Task 1.6: Memory leak audit - added IDisposable to ServerHome.razor, verified all components properly dispose
@@ -54,6 +56,7 @@
 - ✅ Total: 18 hours invested
 
 **Sprint 3 Deliverables (✅ Complete - 2025-12-05):**
+
 - ✅ Task 1.7: Atomic file writes - WriteJsonAtomically<T>() method with temp file pattern
 - ✅ Task 1.8: Migrated all File.WriteAllText() to atomic writes (6 methods updated)
 - ✅ Task 1.9: Input validation - SearchFiles (null, max 100 chars, XSS prevention with HtmlEncode)
@@ -66,6 +69,7 @@
 - 🚀 **Release: v2.1 - "Stability Release"** (Phase 1 Complete)
 
 **Sprint 4 Deliverables (✅ Complete - 2025-12-06):**
+
 - ✅ Task 2.1: IEd2kUrlParser interface with Result<Ed2kLink> pattern
 - ✅ Task 2.1: Ed2kLink record and Ed2kParseError enum created
 - ✅ Task 2.2: Ed2kUrlParser implementation with regex validation
@@ -76,6 +80,7 @@
 - ✅ Total: 18 hours invested
 
 ### Phase 1 Progress: ✅ 100% Complete (3/3 sprints) - Released as v2.1
+
 ### Phase 2 Progress: 🚧 33% Complete (1/3 sprints)
 
 ---
@@ -129,6 +134,7 @@ Transform AmuleRemoteControl from a functional but fragile application into a ro
 AmuleRemoteGui is a .NET 10.0 MAUI Blazor Hybrid application that provides remote control for aMule P2P file-sharing servers. The app runs primarily on Android, allowing users to manage downloads, uploads, searches, and server connections through a mobile interface.
 
 **Key Technology Stack:**
+
 - .NET 10.0 MAUI Blazor Hybrid
 - Radzen.Blazor 8.3.6 (UI components)
 - HtmlAgilityPack 1.12.4 (HTML parsing)
@@ -180,6 +186,7 @@ The application currently suffers from:
 ### Success Criteria
 
 ✅ **Technical:**
+
 - Zero critical bugs
 - 80%+ test coverage for services
 - All hardcoded values moved to configuration
@@ -187,6 +194,7 @@ The application currently suffers from:
 - Modular HTML parsing architecture
 
 ✅ **User Experience:**
+
 - Multi-language support (5+ cultures)
 - Dark mode with theme persistence
 - Download completion notifications
@@ -194,6 +202,7 @@ The application currently suffers from:
 - Batch operations for downloads
 
 ✅ **Process:**
+
 - Weekly commits with clear messages
 - Phase-based releases (v2.1, v2.2, v2.3, v2.4, v2.5)
 - Updated documentation (CLAUDE.md, XML comments)
@@ -301,6 +310,7 @@ The application currently suffers from:
 **Duration:** 3 weeks (30 hours)
 
 **Deliverables:**
+
 - ✅ Multi-language support (en-US, it-IT, de-DE, fr-FR, es-ES)
 - ✅ Thread-safe state management
 - ✅ Atomic file writes for settings
@@ -317,6 +327,7 @@ The application currently suffers from:
 **Duration:** 3 weeks (56 hours)
 
 **Deliverables:**
+
 - ✅ Ed2k URL validation and parsing
 - ✅ Event-based deep linking (no singleton)
 - ✅ User confirmation dialog
@@ -334,6 +345,7 @@ The application currently suffers from:
 **Duration:** 4 weeks (86 hours)
 
 **Deliverables:**
+
 - ✅ Parser layer with clean interfaces
 - ✅ XPath configuration externalized
 - ✅ HTML test fixtures for all pages
@@ -351,6 +363,7 @@ The application currently suffers from:
 **Duration:** 2 weeks (46 hours)
 
 **Deliverables:**
+
 - ✅ Result<T> pattern throughout
 - ✅ Custom exception types
 - ✅ Connection diagnostics page
@@ -368,6 +381,7 @@ The application currently suffers from:
 **Duration:** 5 weeks (152 hours)
 
 **Deliverables:**
+
 - ✅ Dark mode with theme switching
 - ✅ Download completion notifications
 - ✅ Statistics dashboard with charts
@@ -476,6 +490,15 @@ The application currently suffers from:
 
 **Sprint 4 Total:** 18 hours
 **Commit Message:** `feat: Add ed2k URL parser with comprehensive validation (refs #4)`
+
+**Sprint 5 Deliverables (✅ Complete - 2025-12-27):**
+
+- ✅ Task 2.4: IDeepLinkService & DeepLinkService implementation (Event-driven)
+- ✅ Task 2.5: MainActivity integration with IDeepLinkService (Removed obsolete Ed2kUrl singleton)
+- ✅ Task 2.6: UI Refactor (Home.razor, LoginPage.razor, AddLink.razor) to use DeepLinkService
+- ✅ Task 2.7: Implemented Cold Start support with pending link retrieval
+- ✅ Verified build and clean architecture
+- ✅ Total: 22 hours invested
 
 ---
 
@@ -789,6 +812,7 @@ git push origin v2.1
 **Frequency:** Weekly (after each sprint)
 
 **Commit Message Format:**
+
 ```
 <type>: <short description> (<reference>)
 
@@ -802,6 +826,7 @@ Testing: <testing notes>
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `refactor`: Code refactoring (no behavior change)
@@ -810,6 +835,7 @@ Testing: <testing notes>
 - `chore`: Maintenance tasks
 
 **Example:**
+
 ```
 feat: Add multi-language support with culture selection (fixes #1)
 
@@ -833,6 +859,7 @@ Confirmed aMule parsing still works correctly.
 **Feature Branches:** Not used (solo developer, weekly commits to main)
 
 **Hotfix Process:**
+
 1. If critical bug found in released version
 2. Create branch `hotfix/v2.x.1` from tag `v2.x`
 3. Fix bug, test, commit
@@ -874,6 +901,7 @@ If release has critical bug:
 ### Unit Testing (80%+ Coverage Goal)
 
 **Target Files:**
+
 - All parser implementations (IDownloadParser, IUploadParser, etc.)
 - Ed2kUrlParser
 - UtilityServices formatting methods
@@ -882,11 +910,13 @@ If release has critical bug:
 **Framework:** xUnit + FluentAssertions
 
 **Mock Strategy:**
+
 - HTML mocking: Use saved HTML fixtures from task 3.3
 - Network mocking: Mock INetworkHelper responses
 - File system mocking: Use in-memory file system or temp directories
 
 **Example Test:**
+
 ```csharp
 [Fact]
 public void DownloadParser_WithValidHtml_ReturnsDownloadList()
@@ -909,12 +939,14 @@ public void DownloadParser_WithValidHtml_ReturnsDownloadList()
 ### Integration Testing
 
 **Target Scenarios:**
+
 - Full deep linking flow: Intent → MainActivity → DeepLinkService → Home → AddLink
 - Authentication flow: LoginPage → AccessService → NetworkHelper → aMule
 - Download management: DownloadingHome → aMuleRemoteService → Parsers → UI update
 - Settings persistence: Setting.razor → UtilityServices → File system → Reload
 
 **Approach:**
+
 - Use TestHost for Blazor component testing
 - Mock external dependencies (aMule HTTP responses)
 - Test service interactions via DI container
@@ -945,6 +977,7 @@ public void DownloadParser_WithValidHtml_ReturnsDownloadList()
 | E2E-018 | Settings Persistence | Change settings, close app, reopen | Settings persisted | ⬜ |
 
 **Testing Frequency:**
+
 - After each sprint: Smoke test (E2E-001 to E2E-007)
 - Before each release: Full regression test (all E2E tests)
 - After critical bug fix: Targeted test (affected scenario + regression)
@@ -964,6 +997,7 @@ public void DownloadParser_WithValidHtml_ReturnsDownloadList()
 | **Database Query** | ~50ms | <50ms | <200ms |
 
 **Tools:**
+
 - Stopwatch timing in code (logged to Serilog)
 - Android Profiler (CPU, memory, network)
 - Manual observation during testing
@@ -971,6 +1005,7 @@ public void DownloadParser_WithValidHtml_ReturnsDownloadList()
 ### Test Data
 
 **Mock aMule HTML Fixtures (Created in Sprint 7):**
+
 - `downloads-empty.html` - No downloads
 - `downloads-single.html` - One download
 - `downloads-10.html` - Ten downloads (typical)
@@ -982,6 +1017,7 @@ public void DownloadParser_WithValidHtml_ReturnsDownloadList()
 - `servers-*.html` - Similar variations
 
 **Real ed2k Links (For Testing):**
+
 ```
 Valid:
 ed2k://|file|Ubuntu-20.04.iso|2877227008|5E0A6F1D2C3B4A5D6E7F8A9B0C1D2E3F|/
@@ -1120,35 +1156,42 @@ Before tagging release, all must be ✅:
 ### Appendix A: Technology Stack Details
 
 **Framework & Language:**
+
 - .NET 10.0 (Released Nov 2024)
 - C# 12 with nullable reference types enabled
 - MAUI Blazor Hybrid (Razor components in WebView)
 
 **UI & Components:**
+
 - Radzen.Blazor 8.3.6 (100+ components, Material Design)
 - Custom CSS for theme overrides (wwwroot/css/)
 
 **Data & Persistence:**
+
 - System.Text.Json 10.0.0 (JSON serialization)
 - SQLite (via sqlite-net-pcl, Phase 5)
 - File-based settings (AppDataDirectory)
 - SecureStorage API (passwords)
 
 **Networking:**
+
 - HttpClient with IHttpClientFactory
 - Gzip/Deflate automatic decompression
 - 30-second timeout
 
 **Parsing:**
+
 - HtmlAgilityPack 1.12.4 (XPath/LINQ queries)
 - Custom parsers (Phase 3)
 
 **Logging:**
+
 - Serilog 4.3.0 (structured logging)
 - File sink (rolling daily, 5-day retention)
 - Debug sink (Visual Studio output)
 
 **Platform Services:**
+
 - Plugin.Fingerprint 2.1.5 (biometric auth)
 - Android WorkManager (background tasks, Phase 5)
 - Android Notifications (local notifications)
@@ -1259,6 +1302,7 @@ AmuleRemoteControl/
 ### Appendix C: Configuration Files
 
 **GlobalSettings.json** (AppDataDirectory)
+
 ```json
 {
   "Settings": [
@@ -1271,6 +1315,7 @@ AmuleRemoteControl/
 ```
 
 **NetworkSetting.json**
+
 ```json
 {
   "Profiles": [
@@ -1291,6 +1336,7 @@ AmuleRemoteControl/
 ```
 
 **CustomSettings.json**
+
 ```json
 {
   "LastLoginDateTime": "2025-12-04T10:30:00Z",
@@ -1309,6 +1355,7 @@ AmuleRemoteControl/
 ```
 
 **LoginSettings.json**
+
 ```json
 {
   "RememberPsw": true,
@@ -1317,9 +1364,11 @@ AmuleRemoteControl/
   "Password": ""
 }
 ```
+
 *Note: Actual password stored in SecureStorage, not JSON*
 
 **xpaths.json** (Resources/Raw, new in Sprint 7)
+
 ```json
 {
   "versions": {
@@ -1395,16 +1444,19 @@ AmuleRemoteControl/
 ### Appendix F: Contact & Support
 
 **Developer:**
+
 - GitHub: [Repository Link]
 - Issues: [GitHub Issues Link]
 
 **Documentation:**
+
 - CLAUDE.md: Architecture and development guide (updated continuously)
 - README.md: User-facing installation and usage
 - This Document (MasterPlan.md): Comprehensive development plan
 
 **aMule Resources:**
-- Official Site: http://www.amule.org/
+
+- Official Site: <http://www.amule.org/>
 - Web Interface Guide: [Link to aMule wiki]
 
 ---
@@ -1424,6 +1476,7 @@ AmuleRemoteControl/
 **Plan Status:** 🚧 In Progress - Ready for Sprint 5
 
 **Next Steps:**
+
 1. ✅ ~~Begin Sprint 1 (Culture Internationalization)~~ - COMPLETE
 2. ✅ ~~Complete Sprint 2 (Thread Safety & Events)~~ - COMPLETE
 3. ✅ ~~Complete Sprint 3 (Atomic Writes & Validation)~~ - COMPLETE

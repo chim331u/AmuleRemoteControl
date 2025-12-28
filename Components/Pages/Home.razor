@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using AmuleRemoteControl.Components.Interfaces
+@implements IDisposable
 
 
 @if (connecting)
@@ -23,18 +25,20 @@
     public IAccessService _service { get; set; }
 
     [Inject]
-    public Ed2kUrl Ed2kUrlService { get; set; }
+    public IDeepLinkService DeepLinkService { get; set; }
 
     bool connecting = false;
     // bool logging = false;
 
     protected override async Task OnInitializedAsync()
     {
-        var link = Ed2kUrlService.UrlData;
-        // Console.WriteLine("Mainpage Url= " + link);
-        if (link != null)
+        DeepLinkService.LinkReceived += OnLinkReceived;
+
+        // Check for pending link (cold start)
+        var pendingLink = DeepLinkService.GetPendingLink();
+        if (pendingLink != null)
         {
-            NavManager.NavigateTo($"/addlink");
+            ProcessLink(pendingLink.Url);
             return;
         }
         else
@@ -70,4 +74,21 @@
         return connectionStatus;
     }
 
+    private void OnLinkReceived(object? sender, DeepLinkEventArgs e)
+    {
+        InvokeAsync(() => ProcessLink(e.Url));
+    }
+
+    private void ProcessLink(string url)
+    {
+        NavManager.NavigateTo($"/addlink?url={Uri.EscapeDataString(url)}");
+    }
+
+    public void Dispose()
+    {
+        if (DeepLinkService != null)
+        {
+            DeepLinkService.LinkReceived -= OnLinkReceived;
+        }
+    }
 }

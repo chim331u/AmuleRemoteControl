@@ -21,8 +21,10 @@
     public IAmuleRemoteServices _service { get; set; }
     [Inject]
     public IAccessService _accessService { get; set; }
-    [Inject]
-    public Ed2kUrl Ed2kUrlService { get; set; }
+
+    
+    [SupplyParameterFromQuery]
+    public string? Url { get; set; }
 
     string? link;
 
@@ -36,9 +38,9 @@
         {
             await _service.AutoStatus();
 
-            if (Ed2kUrlService.UrlData != null)
+            if (!string.IsNullOrEmpty(Url))
             {
-                link = Ed2kUrlService.UrlData;
+                link = Url;
                 StateHasChanged();
             }
 
@@ -51,7 +53,8 @@
         {
             await _service.AddEd2kLink(link);
             Log.Information("Link sent to download");
-            Ed2kUrlService.UrlData = null;
+            await _service.AddEd2kLink(link);
+            Log.Information("Link sent to download");
             link = string.Empty;
             NavManager.NavigateTo("downloading");
         }
@@ -59,7 +62,6 @@
 
     private async Task ClearEd2kLink()
     {
-        Ed2kUrlService.UrlData = null;
         link = string.Empty;
         StateHasChanged();
     }

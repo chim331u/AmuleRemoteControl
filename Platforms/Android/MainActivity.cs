@@ -1,4 +1,5 @@
 ﻿using AmuleRemoteControl.Components.Data;
+using AmuleRemoteControl.Components.Interfaces;
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
@@ -41,11 +42,7 @@ namespace AmuleRemoteControl;
             }
             else
             {
-                var ed2kUrlService = IPlatformApplication.Current?.Services.GetService<Ed2kUrl>();
-                if (ed2kUrlService != null)
-                {
-                    ed2kUrlService.UrlData = null;
-                }
+                // No action needed for deep link service here
             }
 
         }
@@ -68,17 +65,14 @@ namespace AmuleRemoteControl;
 
         void HandleAppLink(string url)
         {
-            //if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out var uri))
-            //    App.Current?.SendOnAppLinkRequestReceived(uri);
-            //Console.WriteLine("URL= " + url);
-            //App.Current.MainPage.Navigation.PushModalAsync(new MainPage(url));
-
-            var ed2kUrlService = IPlatformApplication.Current?.Services.GetService<Ed2kUrl>();
-            if (ed2kUrlService != null)
+            var deepLinkService = IPlatformApplication.Current?.Services.GetService<IDeepLinkService>();
+            if (deepLinkService != null)
             {
-                ed2kUrlService.UrlData = System.Web.HttpUtility.UrlDecode(url);
+                // Notify the service about the received link
+                deepLinkService.NotifyLinkReceived(url, DeepLinkSource.ExternalApp);
             }
 
+            // Navigate to main page to ensure UI is visible
             App.Current.MainPage.Navigation.PushModalAsync(new MainPage());
         }
 
