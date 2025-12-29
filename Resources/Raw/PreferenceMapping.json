@@ -1,0 +1,139 @@
+{
+  "$schema": "Preference Mapping Schema for aMule Preferences Parsing",
+  "description": "Maps JavaScript preference keys from aMule preferences page to C# PreferenceModel properties. Eliminates the 200+ line switch statement.",
+  "version": "1.0",
+  "mappings": {
+    "max_line_up_cap": {
+      "property": "MaxUploadRate_Statistic",
+      "type": "string",
+      "description": "Maximum line upload capacity for statistics"
+    },
+    "max_line_down_cap": {
+      "property": "MaxDownloadRate_Statistic",
+      "type": "string",
+      "description": "Maximum line download capacity for statistics"
+    },
+    "max_up_limit": {
+      "property": "MaxUploadRate",
+      "type": "string",
+      "description": "Maximum upload rate limit"
+    },
+    "max_down_limit": {
+      "property": "MaxDownloadRate",
+      "type": "string",
+      "description": "Maximum download rate limit"
+    },
+    "slot_alloc": {
+      "property": "SlotAllocation",
+      "type": "string",
+      "description": "Slot allocation strategy"
+    },
+    "tcp_port": {
+      "property": "TCPport",
+      "type": "string",
+      "description": "TCP port for ed2k connections"
+    },
+    "udp_port": {
+      "property": "UDPport",
+      "type": "string",
+      "description": "UDP port for Kad network"
+    },
+    "udp_dis": {
+      "property": "DisableUDPconnections",
+      "type": "bool",
+      "description": "Disable UDP connections (1=true, 0=false)"
+    },
+    "max_file_src": {
+      "property": "MaxSourcePerFile",
+      "type": "string",
+      "description": "Maximum sources per file"
+    },
+    "max_conn_total": {
+      "property": "MaxTotalConnection",
+      "type": "string",
+      "description": "Maximum total connections"
+    },
+    "autoconn_en": {
+      "property": "AutoConnectAtStartUp",
+      "type": "bool",
+      "description": "Auto-connect at startup (1=true, 0=false)"
+    },
+    "reconn_en": {
+      "property": "ReconnectWhenLostConnection",
+      "type": "bool",
+      "description": "Reconnect when connection lost (1=true, 0=false)"
+    },
+    "ich_en": {
+      "property": "ICHactive",
+      "type": "bool",
+      "description": "ICH (Intelligent Corruption Handling) active (1=true, 0=false)"
+    },
+    "aich_trust": {
+      "property": "AICHtrustsEveryHash",
+      "type": "bool",
+      "description": "AICH trusts every hash (1=true, 0=false)"
+    },
+    "new_files_paused": {
+      "property": "AddFileDownloadQueuePauseMode",
+      "type": "bool",
+      "description": "Add new files to download queue in paused mode (1=true, 0=false)"
+    },
+    "new_files_auto_dl_prio": {
+      "property": "AddDownloadFileAutoPriority",
+      "type": "bool",
+      "description": "Automatically set priority for new downloads (1=true, 0=false)"
+    },
+    "new_files_auto_ul_prio": {
+      "property": "NewSharedFileAutoPriority",
+      "type": "bool",
+      "description": "Automatically set priority for new shared files (1=true, 0=false)"
+    },
+    "extract_metadata": {
+      "property": "ExtractMetadataTags",
+      "type": "bool",
+      "description": "Extract metadata tags from files (1=true, 0=false)"
+    },
+    "alloc_full": {
+      "property": "AllocFullDiskSpacePartFiles",
+      "type": "bool",
+      "description": "Allocate full disk space for part files (1=true, 0=false)"
+    },
+    "check_free_space": {
+      "property": "CheckFreeSpace",
+      "type": "bool",
+      "description": "Check free disk space before downloading (1=true, 0=false)"
+    },
+    "min_free_space": {
+      "property": "MinimumFreeSpaceMb",
+      "type": "string",
+      "description": "Minimum free space in MB"
+    },
+    "use_gzip": {
+      "property": "UseGzipCompression",
+      "type": "bool",
+      "description": "Use gzip compression for web interface (1=true, 0=false)"
+    },
+    "autorefresh_time": {
+      "property": "PageRefreshInterval",
+      "type": "string",
+      "description": "Page auto-refresh interval in seconds"
+    }
+  },
+  "_notes": {
+    "usage": "PreferencesParser loads this JSON to map JavaScript preference keys to C# properties",
+    "maintenance": "Add new mappings here when aMule adds new preferences - no code changes needed",
+    "type_explanation": {
+      "string": "Value is used as-is (e.g., port numbers, rates)",
+      "bool": "Value is '1' (true) or '0' (false), converted to C# bool"
+    },
+    "ignored_keys": [
+      "preview_prio",
+      "upload_full_chunks",
+      "first_last_chunks_prio",
+      "start_next_paused",
+      "resume_same_cat",
+      "save_sources"
+    ],
+    "ignored_explanation": "These keys exist in aMule HTML but are commented out in the original parser (lines 989-1015)"
+  }
+}

@@ -2,6 +2,7 @@
 using AmuleRemoteControl.Components.Data;
 using AmuleRemoteControl.Components.Interfaces;
 using AmuleRemoteControl.Components.Service;
+using AmuleRemoteControl.Components.Service.Parsers;
 using Microsoft.Extensions.Logging;
 using Plugin.Fingerprint;
 using Plugin.Fingerprint.Abstractions;
@@ -31,17 +32,33 @@ public static class MauiProgram
             // Register CultureProvider as singleton to manage application culture
             builder.Services.AddSingleton<ICultureProvider, CultureProvider>();
 
+            // Register Radzen services (UI components)
             builder.Services.AddScoped<SessionStorageAccessor>();
             builder.Services.AddScoped<DialogService>();
             builder.Services.AddScoped<NotificationService>();
             builder.Services.AddScoped<TooltipService>();
             builder.Services.AddScoped<ContextMenuService>();
-            // Register internal services
+
+            // Register core application services
             builder.Services.AddScoped<IUtilityServices, UtilityServices>();
             builder.Services.AddScoped<IAmuleRemoteServices, aMuleRemoteService>();
             builder.Services.AddScoped<IAccessService, AccessService>();
             builder.Services.AddScoped<IEd2kUrlParser, Ed2kUrlParser>(); // Ed2k URL parser for deep linking
             builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>(); // Event-based deep link service
+
+            // Register HTML parsing infrastructure (Sprint 7-8: Phase 3)
+            builder.Services.AddSingleton<XPathConfiguration>(); // XPath configuration for version-aware parsing
+
+            // Register parser implementations (Sprint 8-9)
+            builder.Services.AddScoped<IDownloadParser, DownloadParser>();
+            builder.Services.AddScoped<IUploadParser, UploadParser>();
+            builder.Services.AddScoped<IServerParser, ServerParser>();
+            builder.Services.AddScoped<IStatsParser, StatsParser>();
+            builder.Services.AddScoped<ISearchParser, SearchParser>();
+            builder.Services.AddScoped<IPreferencesParser, PreferencesParser>();
+
+            // TODO (Sprint 10): Register version detector
+            // builder.Services.AddScoped<IAmuleVersionDetector, AmuleVersionDetector>();
 
             // Configure HttpClient with IHttpClientFactory for NetworkHelper
             builder.Services.AddHttpClient<INetworkHelper, NetworkHelper>(client =>
