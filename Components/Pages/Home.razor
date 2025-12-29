@@ -24,44 +24,30 @@
     [Inject]
     public IAccessService _service { get; set; }
 
-    [Inject]
-    public IDeepLinkService DeepLinkService { get; set; }
 
     bool connecting = false;
     // bool logging = false;
 
     protected override async Task OnInitializedAsync()
     {
-        DeepLinkService.LinkReceived += OnLinkReceived;
-
-        // Check for pending link (cold start)
-        var pendingLink = DeepLinkService.GetPendingLink();
-        if (pendingLink != null)
+        if (await ConnectToaMule() == "OK")
         {
-            ProcessLink(pendingLink.Url);
-            return;
+            NavManager.NavigateTo("/login");
+
         }
         else
         {
-            if (await ConnectToaMule() == "OK")
-            {
-                NavManager.NavigateTo("/login");
+            NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "Network Setting",
+                    Detail = $"Please set network setting",
+                    Duration = 4000
 
-            }
-            else
-            {
-                NotificationService.Notify(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Warning,
-                        Summary = "Network Setting",
-                        Detail = $"Please set network setting",
-                        Duration = 4000
+                });
 
-                    });
-
-                //navigate to config network page
-                NavManager.NavigateTo("/setting");
-            }
+            //navigate to config network page
+            NavManager.NavigateTo("/setting");
         }
     }
 
@@ -74,21 +60,8 @@
         return connectionStatus;
     }
 
-    private void OnLinkReceived(object? sender, DeepLinkEventArgs e)
-    {
-        InvokeAsync(() => ProcessLink(e.Url));
-    }
-
-    private void ProcessLink(string url)
-    {
-        NavManager.NavigateTo($"/addlink?url={Uri.EscapeDataString(url)}");
-    }
 
     public void Dispose()
     {
-        if (DeepLinkService != null)
-        {
-            DeepLinkService.LinkReceived -= OnLinkReceived;
-        }
     }
 }

@@ -71,9 +71,6 @@ namespace AmuleRemoteControl;
                 // Notify the service about the received link
                 deepLinkService.NotifyLinkReceived(url, DeepLinkSource.ExternalApp);
             }
-
-            // Navigate to main page to ensure UI is visible
-            App.Current.MainPage.Navigation.PushModalAsync(new MainPage());
         }
 
     }

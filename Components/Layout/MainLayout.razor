@@ -55,7 +55,7 @@
                         <RadzenProfileMenuItem Text="Setting App" Icon="app_settings_alt" Path="setting"></RadzenProfileMenuItem>
                         <RadzenProfileMenuItem Text="Log App" Icon="article" Path="logger"></RadzenProfileMenuItem>
                         <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.End">
-                        <p>v2.0.0</p></RadzenStack>
+                        <p>v2.0.1</p></RadzenStack>
                     </ChildContent>
                 </RadzenProfileMenu>
 
@@ -70,34 +70,38 @@
         </div>
     </RadzenBody>
     <RadzenFooter>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="2rem" JustifyContent="JustifyContent.Center" Wrap="FlexWrap.Wrap">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" JustifyContent="JustifyContent.SpaceEvenly" Wrap="FlexWrap.NoWrap" Style="width: 100%; padding: 0.5rem 0;">
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
-                         onclick="@(()=> NavigateTo("upload"))">
-                <RadzenIcon Icon="file_upload" />
-                <RadzenStack>Upload</RadzenStack>
-            </RadzenStack>
-
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
-                         onclick="@(()=> NavigateTo("server"))">
-                <RadzenIcon Icon="dns" />
-                <RadzenStack>Server</RadzenStack>
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(()=> NavigateTo("upload"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="file_upload" Style="font-size: 2.5rem;" />
+                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Upload</RadzenText>
             </RadzenStack>
 
-                        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
-                         onclick="@(()=> NavigateTo("addlink"))">
-                <RadzenIcon Icon="add_link" /><RadzenStack>Add link</RadzenStack>
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(()=> NavigateTo("server"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="dns" Style="font-size: 2.5rem;" />
+                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Server</RadzenText>
             </RadzenStack>
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
-                         onclick="@(()=> NavigateTo("search"))">
-                <RadzenIcon Icon="search" /><RadzenStack>Search</RadzenStack>
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(()=> NavigateTo("addlink"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="add_link" Style="font-size: 2.5rem;" />
+                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Add Link</RadzenText>
             </RadzenStack>
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center"
-                         onclick="@(()=> NavigateTo("home"))">
-                <RadzenIcon Icon="file_download" />
-                <RadzenStack>Download</RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(()=> NavigateTo("search"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="search" Style="font-size: 2.5rem;" />
+                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Search</RadzenText>
             </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(()=> NavigateTo("home"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="file_download" Style="font-size: 2.5rem;" />
+                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Download</RadzenText>
+            </RadzenStack>
+
         </RadzenStack>
     </RadzenFooter>
 </RadzenLayout>
@@ -116,12 +120,17 @@
     [Inject]
     public IUtilityServices UtilityServices { get; set; }
 
+    [Inject]
+    public IDeepLinkService DeepLinkService { get; set; }
+
     // Stats? stat = new Stats();
     protected override void OnInitialized()
     {
         _accessService.OnChange += this.OnAuthChanged;
         _service.StatusChanged += this.OnStateChanged;
         _service.DownChanged += this.OnDownChanged;
+
+        DeepLinkService.LinkReceived += OnLinkReceived;
 
         // Culture is now managed by ICultureProvider and applied automatically
         // No need to set it here as CultureProvider sets it in its constructor
@@ -136,6 +145,15 @@
                 // Add a small delay to ensure UI is ready
                 await Task.Delay(500);
                 await DialogService.OpenAsync<OnboardingDialog>("Welcome", null, new DialogOptions() { Width = "90%", Height = "auto", CloseDialogOnOverlayClick = false });
+            }
+
+            // Check for pending deep link (cold start) logic here or in OnInitialized
+            // Putting it in OnAfterRender ensures the Router is fully ready
+            var pendingLink = DeepLinkService.GetPendingLink();
+            if (pendingLink != null)
+            {
+                await Task.Delay(300); // Small delay to let initial page load slightly
+                ProcessLink(pendingLink.Url);
             }
         }
     }
@@ -154,6 +172,24 @@
         _accessService.OnChange -= OnAuthChanged;
         _service.StatusChanged -= OnStateChanged;
         _service.DownChanged -= OnDownChanged;
+        if (DeepLinkService != null)
+        {
+            DeepLinkService.LinkReceived -= OnLinkReceived;
+        }
+    }
+
+    private void OnLinkReceived(object? sender, DeepLinkEventArgs e)
+    {
+        InvokeAsync(() => ProcessLink(e.Url));
+    }
+
+    private void ProcessLink(string url)
+    {
+        // Add a small delay/check to ensure we are ready to navigate
+        // If the user is on a modal (like Onboarding), this might be tricky, 
+        // but NavManager usually handles replacing the view.
+        // We navigate to AddLink which handles auth redirect if needed.
+        NavManager.NavigateTo($"/addlink?url={Uri.EscapeDataString(url)}");
     }
 
     private void UpdateStatus()
