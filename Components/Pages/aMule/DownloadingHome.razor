@@ -16,10 +16,7 @@
         @foreach(var data in _downloadFiles.OrderBy(x=>x.Status))
         {
             <RadzenCard Variant="Variant.Filled" Gap="1">
-
-                @* <div @onclick="@(() => (_fileId == data.FileId) ? (_fileId = "") : (_fileId = data.FileId) )">
-                  <div @onclick="@(() => _fileId = data.FileId)">*@
-                    <div @onclick="@(() => Expand(data.FileId))">
+                <div @onclick="@(() => Expand(data.FileId))">
 
                     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
                         <RadzenText class="rz-color-secondary">@data.FileName</RadzenText>

@@ -85,7 +85,7 @@ namespace AmuleRemoteControl.Components.Service
             }
         }
 
-        public async Task<string> PostRequest(string page, Dictionary<string, string> parameters )
+        public async Task<string> PostRequest(string page, Dictionary<string, string> parameters)
         {
             try
             {

@@ -90,7 +90,7 @@ namespace AmuleRemoteControl.Components.Data
             _logger = logger;
 
             // Load default configuration
-            // TODO (Sprint 7): Load from xpaths.json in Resources/Raw
+            // NOTE: Version-specific configurations can be loaded via LoadConfigurationForVersion()
             _config = GetDefaultConfiguration();
 
             _logger?.LogInformation("XPathConfiguration initialized with default values");
@@ -122,18 +122,150 @@ namespace AmuleRemoteControl.Components.Data
 
         /// <summary>
         /// Loads XPath configuration from JSON file for a specific aMule version.
-        /// This will be implemented in Sprint 7 Task 3.1.
+        /// Falls back to "default" configuration if version-specific config not found.
         /// </summary>
-        /// <param name="version">aMule version (e.g., "2.3.2", "2.3.3")</param>
+        /// <param name="version">aMule version (e.g., "2.3.2", "2.3.3", "unknown")</param>
         public void LoadConfigurationForVersion(string version)
         {
             _logger?.LogInformation($"Loading XPath configuration for aMule version: {version}");
 
-            // TODO (Sprint 7): Implement JSON loading
-            // For now, use default configuration for all versions
-            _config = GetDefaultConfiguration();
+            // If version is unknown or empty, use default
+            if (string.IsNullOrWhiteSpace(version) || version == "unknown")
+            {
+                _logger?.LogInformation("Using default configuration (unknown version)");
+                _config = GetDefaultConfiguration();
+                return;
+            }
 
-            _logger?.LogWarning($"Version-specific configuration not yet implemented. Using default configuration.");
+            try
+            {
+                // Try to load version-specific configuration from xpaths.json
+                var versionConfig = LoadConfigurationFromJson(version);
+
+                if (versionConfig != null)
+                {
+                    _config = versionConfig;
+                    _logger?.LogInformation($"Loaded XPath configuration for aMule {version}");
+                }
+                else
+                {
+                    _logger?.LogWarning($"No specific configuration found for version {version}, using default");
+                    _config = GetDefaultConfiguration();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, $"Error loading configuration for version {version}, using default");
+                _config = GetDefaultConfiguration();
+            }
+        }
+
+        /// <summary>
+        /// Loads XPath configuration from xpaths.json for a specific version.
+        /// </summary>
+        /// <param name="version">aMule version</param>
+        /// <returns>XPathConfig if found, null otherwise</returns>
+        private XPathConfig? LoadConfigurationFromJson(string version)
+        {
+            try
+            {
+                // Try to load from Resources/Raw/xpaths.json
+                var jsonPath = Path.Combine(FileSystem.AppDataDirectory, "..", "..", "Resources", "Raw", "xpaths.json");
+
+                if (!File.Exists(jsonPath))
+                {
+                    _logger?.LogWarning($"xpaths.json not found at {jsonPath}");
+                    return null;
+                }
+
+                var jsonContent = File.ReadAllText(jsonPath);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                };
+
+                var document = JsonSerializer.Deserialize<XPathConfigDocument>(jsonContent, options);
+
+                if (document?.Versions == null)
+                {
+                    _logger?.LogWarning("No versions found in xpaths.json");
+                    return null;
+                }
+
+                // Try to get version-specific config, fall back to default
+                if (document.Versions.TryGetValue(version, out var versionData))
+                {
+                    return ConvertToXPathConfig(version, versionData);
+                }
+
+                // If specific version not found, try "default"
+                if (document.Versions.TryGetValue("default", out var defaultData))
+                {
+                    _logger?.LogInformation($"Version {version} not found in xpaths.json, using default");
+                    return ConvertToXPathConfig("default", defaultData);
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error loading xpaths.json");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Converts JSON version data to XPathConfig object.
+        /// </summary>
+        private XPathConfig ConvertToXPathConfig(string version, VersionData data)
+        {
+            return new XPathConfig
+            {
+                Version = version,
+                DownloadTableIndex = data.DownloadTableIndex,
+                DownloadRowSkipCount = data.DownloadRowSkipCount,
+                UploadTableIndex = data.UploadTableIndex,
+                UploadRowSkipCount = data.UploadRowSkipCount,
+                ServerTableIndex = data.ServerTableIndex,
+                ServerRowSkipCount = data.ServerRowSkipCount,
+                DownloadTableXPath = data.DownloadTableXPath ?? "//table",
+                UploadTableXPath = data.UploadTableXPath ?? "//table",
+                ServerTableXPath = data.ServerTableXPath ?? "//table",
+                StatsTableXPath = data.StatsTableXPath ?? "//table",
+                SearchRowXPath = data.SearchRowXPath ?? "//tr",
+                LogContentXPath = data.LogContentXPath ?? "//pre",
+                PreferencesScriptXPath = data.PreferencesScriptXPath ?? "//script"
+            };
+        }
+
+        /// <summary>
+        /// Root document structure for xpaths.json
+        /// </summary>
+        private class XPathConfigDocument
+        {
+            public Dictionary<string, VersionData>? Versions { get; set; }
+        }
+
+        /// <summary>
+        /// Version data from xpaths.json
+        /// </summary>
+        private class VersionData
+        {
+            public string? Description { get; set; }
+            public int DownloadTableIndex { get; set; }
+            public int DownloadRowSkipCount { get; set; }
+            public int UploadTableIndex { get; set; }
+            public int UploadRowSkipCount { get; set; }
+            public int ServerTableIndex { get; set; }
+            public int ServerRowSkipCount { get; set; }
+            public string? DownloadTableXPath { get; set; }
+            public string? UploadTableXPath { get; set; }
+            public string? ServerTableXPath { get; set; }
+            public string? StatsTableXPath { get; set; }
+            public string? SearchRowXPath { get; set; }
+            public string? LogContentXPath { get; set; }
+            public string? PreferencesScriptXPath { get; set; }
         }
 
         /// <summary>

@@ -376,7 +376,7 @@ namespace AmuleRemoteControl.Components.Service
             {
                 var _customSettings = JsonSerializer.Deserialize<List<GlobalSetting>>(File.ReadAllText(customSettingFullPath));
 
-                if (_customSettings.Any(x=>x.Key.Equals("LastLoginDateTime")))
+                if (_customSettings.Any(x => x.Key.Equals("LastLoginDateTime")))
                 {
                     _customSettings.Where(x => x.Key.Equals("LastLoginDateTime")).FirstOrDefault().Value = lastLoginDateTime.ToString();
                 }
@@ -447,7 +447,7 @@ namespace AmuleRemoteControl.Components.Service
             {
                 var _customSettings = JsonSerializer.Deserialize<List<GlobalSetting>>(File.ReadAllText(customSettingFullPath));
                 var _onboarding = _customSettings.FirstOrDefault(x => x.Key.Equals("OnboardingCompleted"));
-                
+
                 if (_onboarding != null)
                 {
                     return bool.Parse(_onboarding.Value);
@@ -519,8 +519,8 @@ namespace AmuleRemoteControl.Components.Service
             }
 
             return success;
-        }        
-        
+        }
+
         public bool WriteCustomSettingJson(IList<GlobalSetting> globalSettings)
         {
             if (string.IsNullOrEmpty(customSettingFullPath))
@@ -600,7 +600,7 @@ namespace AmuleRemoteControl.Components.Service
                 return false;
             }
         }
-               
+
         public async Task<LoginData> ReadLoginSettingData()
         {
             _logger.LogInformation($"Path: {LoginSettingFullPath}");
@@ -614,7 +614,6 @@ namespace AmuleRemoteControl.Components.Service
             if (!File.Exists(LoginSettingFullPath))
             {
                 _logger.LogWarning($"Login setting file do not exist.");
-                //TODO add json file
                 if (await WriteLoginSettingData(new LoginData()))
                 {
                     _logger.LogInformation($"Login Setting file Created.");

@@ -76,11 +76,6 @@ namespace AmuleRemoteControl.Components.Service
             }
         }
 
-        //public string? DownSpeed { get => downSpeed; set { downSpeed = value; NotifyStateChangedDownSpeed(); } }
-        //private string? downSpeed;
-        //public event Action? OnChangeDownSpeed;
-        //private void NotifyStateChangedDownSpeed() => OnChangeDownSpeed?.Invoke();
-
         ILogger<aMuleRemoteService> _logger = logger;
 
         private readonly IUtilityServices _utilityServices = utilityServices;
@@ -112,12 +107,10 @@ namespace AmuleRemoteControl.Components.Service
 
         public async Task AutoDownSpeed()
         {
-            if (_downloadFiles!=null)
+            if (_downloadFiles != null)
             {
                 GetTotalDownloadSpeed();
             }
-
-            //GetTotalDownloadSpeed();
         }
 
         private void GetTotalDownloadSpeed()
@@ -205,7 +198,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-            
+
             var param = new Dictionary<string, string>();
             param.Add(fileId, "on");
             param.Add("category", "all");
@@ -229,7 +222,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: filesId list is null or empty");
                 return null;
             }
-            
+
 
             // Input validation for command
             if (string.IsNullOrWhiteSpace(command))
@@ -237,7 +230,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-            
+
             var param = new Dictionary<string, string>();
 
             foreach (var fileId in filesId)
@@ -648,10 +641,6 @@ namespace AmuleRemoteControl.Components.Service
         }
         #endregion
 
-        #region Shared Files
-
-        #endregion
-
         #region Search
 
         public async Task<List<Search>> SearchFiles(string searchText, string searchType, string? targetCat)
@@ -828,14 +817,6 @@ namespace AmuleRemoteControl.Components.Service
 
             //command=download&searchval=&avail=&minsize=&minsizeu=MByte&searchtype=Local&maxsize=&maxsizeu=MByte&06D7D1C8CECC6E3CFBDF925A26C0CC8E=on&Download=Download&targetcat=all
         }
-
-        #endregion
-
-        #region Kad
-
-        #endregion
-
-        #region Main Stats
 
         #endregion
 
