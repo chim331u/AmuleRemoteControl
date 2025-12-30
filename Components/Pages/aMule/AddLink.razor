@@ -1,19 +1,51 @@
 ﻿@page "/addlink"
 @using AmuleRemoteControl.Components.Interfaces
 
-
 @if (_accessService.IsAuthorized)
 {
-    @*     <p>ED2K link:</p> *@
-    <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Clear" Click="ClearEd2kLink"></RadzenButton>
-        <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Text="Download" Click="AddEd2kLink"></RadzenButton>
-    </RadzenRow>
+    <RadzenStack Gap="1rem" Class="rz-p-2">
+        
+        <!-- Header / Instructions -->
+        <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 800; color: var(--rz-primary);">
+            Add New Download
+        </RadzenText>
 
-    <RadzenRow AlignItems="AlignItems.Center" Class="rz-mt-12">
-        <RadzenTextArea style="width: 100%" Rows="20" @bind-Value="@link"></RadzenTextArea>
-    </RadzenRow>
+        <RadzenCard Variant="Variant.Outlined" Class="rz-p-4" Style="border-radius: 12px;">
+            <RadzenStack Orientation="Orientation.Vertical" Gap="1.5rem">
+                
+                <!-- Input Section -->
+                <RadzenStack Gap="0.5rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6" Class="rz-color-secondary-text">
+                        ED2K Link
+                    </RadzenText>
+                    <RadzenTextArea @bind-Value="@link" 
+                                  Placeholder="ed2k://|file|..." 
+                                  Rows="8" 
+                                  Style="width: 100%; border-radius: 8px; font-family: monospace; font-size: 0.9rem;" />
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary-text">
+                        Paste the full ED2K link here to start the download.
+                    </RadzenText>
+                </RadzenStack>
 
+                <!-- Action Buttons -->
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                    <RadzenButton ButtonStyle="ButtonStyle.Light" 
+                                 Variant="Variant.Flat" 
+                                 Icon="delete_outline" 
+                                 Text="Clear" 
+                                 Click="ClearEd2kLink" />
+                    
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" 
+                                 Variant="Variant.Flat" 
+                                 Icon="add_link" 
+                                 Text="Add Link" 
+                                 Click="AddEd2kLink" 
+                                 Disabled="@string.IsNullOrWhiteSpace(link)" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+
+    </RadzenStack>
 }
 
 @code {
@@ -21,7 +53,6 @@
     public IAmuleRemoteServices _service { get; set; }
     [Inject]
     public IAccessService _accessService { get; set; }
-
     
     [SupplyParameterFromQuery]
     public string? Url { get; set; }
@@ -37,13 +68,11 @@
         else
         {
             await _service.AutoStatus();
-
             if (!string.IsNullOrEmpty(Url))
             {
                 link = Url;
                 StateHasChanged();
             }
-
         }
     }
 
@@ -52,9 +81,7 @@
         if (!string.IsNullOrEmpty(link))
         {
             await _service.AddEd2kLink(link);
-            Log.Information("Link sent to download");
-            await _service.AddEd2kLink(link);
-            Log.Information("Link sent to download");
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = "Link added to download queue", Duration = 3000 });
             link = string.Empty;
             NavManager.NavigateTo("downloading");
         }

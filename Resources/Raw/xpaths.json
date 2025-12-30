@@ -1,0 +1,75 @@
+{
+  "$schema": "XPath Configuration Schema for aMule HTML Parsing",
+  "description": "Version-specific XPath selectors and table indices for parsing aMule web interface HTML. This configuration allows the app to adapt to different aMule versions without code changes.",
+  "versions": {
+    "2.3.2": {
+      "description": "Default configuration for aMule 2.3.2 (most common version)",
+      "downloadTableIndex": 6,
+      "downloadRowSkipCount": 1,
+      "uploadTableIndex": 8,
+      "uploadRowSkipCount": 2,
+      "serverTableIndex": 1,
+      "serverRowSkipCount": 3,
+      "downloadTableXPath": "//table",
+      "uploadTableXPath": "//table",
+      "serverTableXPath": "//table",
+      "statsTableXPath": "//table",
+      "searchRowXPath": "//tr",
+      "logContentXPath": "//pre",
+      "preferencesScriptXPath": "//script"
+    },
+    "2.3.3": {
+      "description": "Configuration for aMule 2.3.3 (if HTML structure differs)",
+      "downloadTableIndex": 6,
+      "downloadRowSkipCount": 1,
+      "uploadTableIndex": 8,
+      "uploadRowSkipCount": 2,
+      "serverTableIndex": 1,
+      "serverRowSkipCount": 3,
+      "downloadTableXPath": "//table",
+      "uploadTableXPath": "//table",
+      "serverTableXPath": "//table",
+      "statsTableXPath": "//table",
+      "searchRowXPath": "//tr",
+      "logContentXPath": "//pre",
+      "preferencesScriptXPath": "//script"
+    },
+    "default": {
+      "description": "Fallback configuration used when aMule version cannot be detected",
+      "downloadTableIndex": 6,
+      "downloadRowSkipCount": 1,
+      "uploadTableIndex": 8,
+      "uploadRowSkipCount": 2,
+      "serverTableIndex": 1,
+      "serverRowSkipCount": 3,
+      "downloadTableXPath": "//table",
+      "uploadTableXPath": "//table",
+      "serverTableXPath": "//table",
+      "statsTableXPath": "//table",
+      "searchRowXPath": "//tr",
+      "logContentXPath": "//pre",
+      "preferencesScriptXPath": "//script"
+    }
+  },
+  "_notes": {
+    "usage": "XPathConfiguration.cs loads this file to determine which XPath selectors and table indices to use based on detected aMule version",
+    "maintenance": "When aMule updates and changes HTML structure, update the corresponding version section or add a new version",
+    "indices_explanation": {
+      "downloadTableIndex": "Number of tables to skip before reaching the download table (Skip(N) in LINQ)",
+      "downloadRowSkipCount": "Number of header rows to skip in the download table",
+      "uploadTableIndex": "Number of tables to skip before reaching the upload table",
+      "uploadRowSkipCount": "Number of header rows to skip in the upload table",
+      "serverTableIndex": "Number of tables to skip before reaching the server table",
+      "serverRowSkipCount": "Number of header rows to skip in the server table"
+    },
+    "xpath_explanation": {
+      "downloadTableXPath": "XPath to select table elements containing download data",
+      "uploadTableXPath": "XPath to select table elements containing upload data",
+      "serverTableXPath": "XPath to select table elements containing server data",
+      "statsTableXPath": "XPath to select table elements containing statistics",
+      "searchRowXPath": "XPath to select table rows containing search results",
+      "logContentXPath": "XPath to select preformatted text containing log content",
+      "preferencesScriptXPath": "XPath to select script tags containing preference initialization values"
+    }
+  }
+}

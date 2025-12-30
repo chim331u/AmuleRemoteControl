@@ -58,49 +58,6 @@ namespace AmuleRemoteControl.Components.Service
             _networkHelperServices = networkHelperServices;
         }
 
-        //public async Task<bool> LoggedIn()
-        //{
-        //    var result = await _networkHelperServices.SendRequest("?pass=amule");
-        //    //TODO retrive from setting
-
-        //    if (result.Contains($"Enter password :"))
-        //    {
-        //        //login fail
-        //        IsAuthorized = false;
-        //        _logger.LogWarning("Login Fail");
-        //        return false;
-
-        //    }
-        //    else
-        //    {
-        //        IsAuthorized = true;
-        //        _logger.LogInformation("Logged in");
-        //        return true;
-        //    }
-        //}        
-        
-
-
-        //public async Task<bool> LoggedIn(string psw)
-        //{
-        //    var result = await _networkHelperServices.SendRequest($"?pass={psw}");
-
-        //    if (result.Contains($"Enter password :"))
-        //    {
-        //        //login fail
-        //        IsAuthorized = false;
-        //        _logger.LogWarning("Login Fail");
-        //        return false;
-
-        //    }
-        //    else
-        //    {
-        //        IsAuthorized = true;
-        //        _logger.LogInformation("Logged in");
-        //        return true;
-        //    }
-        //}
-
         /// <summary>
         /// Log into amule - save login data
         /// </summary>
@@ -123,19 +80,6 @@ namespace AmuleRemoteControl.Components.Service
                 //logged in
                 IsAuthorized = true;
                 _logger.LogInformation("Logged in");
-                
-                //if (loginData.RememberPsw || loginData.UseBiometric)
-                //{
-                //    //write psw
-                //    _utilityServices.WriteLoginSettingData(loginData);
-                //}
-                //else
-                //{
-                //    //psw null - no save
-                //    loginData.Password = string.Empty;
-                //    _utilityServices.WriteLoginSettingData(loginData);
-                //}
-
                 return true;
             }
         }

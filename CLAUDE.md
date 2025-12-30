@@ -73,7 +73,7 @@ Platform-Specific Layer (Android Deep Linking)
 
 ### Key Services (Dependency Injection)
 
-All services are **Scoped** unless noted otherwise. Registration in `MauiProgram.cs`:
+All services are **Scoped** unless noted otherwise. Registration in `MauiProgram.cs` (see lines 29-54):
 
 1. **IAmuleRemoteServices** (`aMuleRemoteService`)
    - Core aMule communication via HTML scraping
@@ -104,23 +104,36 @@ All services are **Scoped** unless noted otherwise. Registration in `MauiProgram
    - Configured with 30-second timeout
    - Automatic decompression: GZip | Deflate
 
-5. **SessionStorageAccessor**
+5. **SessionStorageAccessor** (Scoped)
    - JavaScript interop for browser sessionStorage
    - In-app logging stored in session memory
    - Lazy-loaded JS module
 
-6. **Ed2kUrl** (Singleton)
-   - Global state for deep-linked ed2k:// URLs
-   - Property: `ed2kUrlData` (string)
-   - Used by Android deep linking integration
+6. **ICultureProvider** (Singleton)
+   - Manages application culture/localization settings
+   - Methods: `GetCulture()`, `SetCulture(string)`
+   - Supports 5 cultures: en-US, it-IT, de-DE, fr-FR, es-ES
+   - Persisted in GlobalSettings.json
 
-7. **Radzen Services** (Scoped)
+7. **IEd2kUrlParser** (Scoped)
+   - Parses and validates ed2k:// URLs
+   - Method: `Result<Ed2kLink> Parse(string url)`
+   - Returns structured Ed2kLink with FileName, FileSize, FileHash
+   - Comprehensive validation (hash format, file size limits, URL encoding)
+
+8. **IDeepLinkService** (Singleton)
+   - Event-driven deep link handling (replaces obsolete Ed2kUrl singleton)
+   - Event: `LinkReceived` with DeepLinkEventArgs
+   - Method: `NotifyLinkReceived(string url, DeepLinkSource source)`
+   - Coordinates MainActivity → Home → AddLink navigation flow
+
+9. **Radzen Services** (Scoped)
    - `DialogService`: Modal dialogs and confirmations
    - `NotificationService`: Toast notifications
    - `TooltipService`: Tooltip management
    - `ContextMenuService`: Context menu handling
 
-8. **IFingerprint** (Singleton)
+10. **IFingerprint** (Singleton)
    - Biometric authentication via Plugin.Fingerprint
    - Registered as `CrossFingerprint.Current`
 
@@ -237,10 +250,12 @@ Save credentials via UtilityServices (optional biometric)
 
 Password sent as query parameter over HTTP (LAN security model).
 
-### 5. Android Deep Linking
+### 5. Android Deep Linking (Event-Driven Architecture)
 - `MainActivity` captures `ed2k://` protocol via IntentFilter
-- Stores URL in `Ed2kUrl.ed2kUrlData` (singleton)
-- Home page redirects to AddLink page when detected
+- Validates URL using `IEd2kUrlParser.Parse()` with Result<T> pattern
+- Fires `IDeepLinkService.LinkReceived` event (no global state)
+- Home.razor subscribes to event and navigates to AddLink page
+- Supports cold start (app closed) and warm start (app running) scenarios
 - Enables share-to-app functionality for ed2k links
 
 ## Data Flow Examples
@@ -316,7 +331,7 @@ Password sent as query parameter over HTTP (LAN security model).
 2. **Culture-Specific Parsing**: Number parsing uses CurrentCulture. Italian culture (it-IT) common in codebase.
 3. **Scoped Service Lifetimes**: Services recreated per request. Use events for cross-component state.
 4. **JavaScript Interop Timing**: `SessionStorageAccessor` requires awaiting module import before use.
-5. **Deep Linking State**: `Ed2kUrl.ed2kUrlData` is global static. Clear after use to prevent re-processing.
+5. **Deep Linking State**: Deep links are event-driven via `IDeepLinkService` (no global state). Components must subscribe/unsubscribe properly to prevent memory leaks.
 6. **File Paths**: Always use `FileSystem.AppDataDirectory` or `FileSystem.CacheDirectory` for cross-platform compatibility.
 
 ## Target Platforms
@@ -326,4 +341,10 @@ Password sent as query parameter over HTTP (LAN security model).
 - **Additional**: iOS 15.0+ (net10.0-ios), macOS Catalyst 15.0+ (net10.0-maccatalyst)
 
 Build commands must specify `-f` flag for target framework. iOS and macOS Catalyst builds require macOS development environment.
-- After sprint completition, updated MasterPlan.md
+
+## Project Status
+
+- **Current Version**: 2.4 (build 24)
+- **Development Phase**: Sprint 5 completed (Deep Link Service & Integration)
+- **Architecture Improvements**: Event-driven deep linking, thread-safe state management, multi-language support
+- **Master Plan**: See MasterPlan.md for detailed roadmap (targeting v2.5)

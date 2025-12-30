@@ -13,84 +13,101 @@
     }
     else
     {
-        @foreach(var data in _downloadFiles.OrderBy(x=>x.Status))
+        @foreach (var data in _downloadFiles.OrderBy(x => x.Status))
         {
-            <RadzenCard Variant="Variant.Filled" Gap="1">
+            <RadzenCard Variant="Variant.Filled" Class="rz-p-2" Style="margin-bottom: 0.5rem;">
+                <div @onclick="@(() => Expand(data.FileId))" style="cursor: pointer;">
 
-                @* <div @onclick="@(() => (_fileId == data.FileId) ? (_fileId = "") : (_fileId = data.FileId) )">
-                  <div @onclick="@(() => _fileId = data.FileId)">*@
-                    <div @onclick="@(() => Expand(data.FileId))">
+                    <!-- Header: Filename & Status -->
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="0.2rem">
+                        <RadzenText TextStyle="TextStyle.Subtitle1"
+                                    Style="font-weight: bold; color: var(--rz-text-title-color); word-break: break-all;">@data.FileName</RadzenText>
 
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
-                        <RadzenText class="rz-color-secondary">@data.FileName</RadzenText>
-                    </RadzenStack>
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">@data.Status</RadzenText>
-                        @if (data.Status != "Paused")
-                        {
-                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">
-                                Speed: @data.DownloadSpeed
-                            </RadzenText>
-                        }
-                    </RadzenStack>
-                    <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" 
-                    >
-                        <RadzenProgressBar style="width: 100%"
-                                           ProgressBarStyle=@(data.Status != "Paused" ? ProgressBarStyle.Secondary : ProgressBarStyle.Primary)
-                                                                                      @bind-Value="@data.Progress" ShowValue="true"/>
-                    </RadzenStack>
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                 JustifyContent="JustifyContent.SpaceBetween">
-                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Size: @data.Size</RadzenText>
-                        <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Completed: @data.Completed</RadzenText>
-                    </RadzenStack>
-                    @if (_fileId == data.FileId)
-                    {
                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
                                      JustifyContent="JustifyContent.SpaceBetween">
-                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Source: @data.Sources</RadzenText>
-                        </RadzenStack>
-
-                        <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                                     JustifyContent="JustifyContent.SpaceBetween">
-                            <RadzenButton Click=@(() => PrioDown(data.FileId)) Icon="remove_circle_outline"
-                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                          Size="ButtonSize.Large"/>
-                            <RadzenText TextStyle="TextStyle.Body2" class="mb-0">Priority: @data.Priority</RadzenText>
-                            <RadzenButton Click=@(() => PrioUp(data.FileId)) Icon="add_circle_outline"
-                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                          Size="ButtonSize.Large"/>
-                        </RadzenStack>
-                        <RadzenStack Gap="1px" Orientation="Orientation.Horizontal"
-                                     JustifyContent=JustifyContent.SpaceBetween AlignItems="AlignItems.Center">
-
-                            <RadzenButton Icon="delete" Click=@(() => Cancel(data.FileId))
-                                          ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                          Size="ButtonSize.Large"/>
-                            <p>Delete</p>
-                            @if (data.Status == "Paused")
+                            <RadzenBadge BadgeStyle="@GetStatusBadgeStyle(data.Status)" Text="@data.Status"
+                                         Variant="Variant.Flat"/>
+                            @if (data.Status != "Paused")
                             {
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                             Gap="0.2rem">
+                                    <RadzenIcon Icon="speed" Style="font-size: 1rem; color: var(--rz-secondary);"/>
+                                    <RadzenText TextStyle="TextStyle.Caption"
+                                                Style="font-weight: bold;">@data.DownloadSpeed</RadzenText>
+                                </RadzenStack>
+                            }
+                        </RadzenStack>
+                    </RadzenStack>
 
-                                <p>Resume</p>
-                                <RadzenButton Icon="play_circle" Click=@(() => Resume(data.FileId))
-                                              ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                              Size="ButtonSize.Large"/>
-                            }
-                            else
-                            {
-                                <p>Pause</p>
-                                <RadzenButton Icon="pause_circle" Click=@(() => Pause(data.FileId))
-                                              ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
-                                              Size="ButtonSize.Large"/>
-                            }
+                    <!-- Progress Bar -->
+                    <RadzenProgressBar Value="@data.Progress" ShowValue="true" Style="height: 12px; margin: 0.5rem 0;"
+                                       ProgressBarStyle="@(data.Status != "Paused" ? ProgressBarStyle.Success : ProgressBarStyle.Base)"/>
+
+                    <!-- Footer Stats: Size & Completed -->
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                 JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Caption"><strong>Size:</strong> @data.Size</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Caption"><strong>Done:</strong> @data.Completed</RadzenText>
+                        @* <RadzenText TextStyle="TextStyle.Caption"><strong>Src:</strong> @data.Sources</RadzenText> *@
+                    </RadzenStack>
+
+                    <!-- EXPANDED ACTION AREA -->
+                    @if (_fileId == data.FileId)
+                    {
+                        <RadzenStack Gap="1rem" Class="rz-mt-3 rz-pt-3"
+                                     Style="border-top: 1px solid var(--rz-border-color);">
+                            <div @onclick:stopPropagation="true" style="cursor: default;">
+
+                                <!-- Priority Stepper -->
+                                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-secondary-text">
+                                        PRIORITY
+                                    </RadzenText>
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                                 JustifyContent="JustifyContent.SpaceBetween"
+                                                 Style="border-radius: 8px; padding: 4px;">
+                                        <RadzenButton Icon="remove" Click=@(() => PrioDown(data.FileId))
+                                                      ButtonStyle="ButtonStyle.Base" Variant="Variant.Text"
+                                                      Size="ButtonSize.Medium"/>
+                                        <RadzenText TextStyle="TextStyle.Body2"
+                                                    Style="font-weight: bold;">@data.Priority</RadzenText>
+                                        <RadzenButton Icon="add" Click=@(() => PrioUp(data.FileId))
+                                                      ButtonStyle="ButtonStyle.Base" Variant="Variant.Text"
+                                                      Size="ButtonSize.Medium"/>
+                                    </RadzenStack>
+                                </RadzenStack>
+                            </div>
+                            <!-- Actions Row -->
+                            <RadzenRow Gap="0.5rem">
+                                <RadzenColumn Size="6">
+                                    @if (data.Status == "Paused")
+                                    {
+                                        <RadzenButton Text="Resume" Icon="play_arrow" Click=@(() => Resume(data.FileId))
+                                                      ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
+                                                      Shade="Shade.Light" Size="ButtonSize.Medium"
+                                                      Style="width: 100%;"/>
+                                    }
+                                    else
+                                    {
+                                        <RadzenButton Text="Pause" Icon="pause" Click=@(() => Pause(data.FileId))
+                                                      ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat"
+                                                      Shade="Shade.Light" Size="ButtonSize.Medium"
+                                                      Style="width: 100%;"/>
+                                    }
+                                </RadzenColumn>
+                                <RadzenColumn Size="6">
+                                    <RadzenButton Text="Delete" Icon="delete" Click=@(() => Cancel(data.FileId))
+                                                  ButtonStyle="ButtonStyle.Dark" Variant="Variant.Flat"
+                                                  Shade="Shade.Light" Size="ButtonSize.Medium" Style="width: 100%;"/>
+                                </RadzenColumn>
+                            </RadzenRow>
+
                         </RadzenStack>
                     }
                 </div>
             </RadzenCard>
             <br/>
         }
-
-
     }
 }
 
@@ -184,7 +201,7 @@
 
     private void Expand(string fileId)
     {
-        if (_fileId==fileId)
+        if (_fileId == fileId)
         {
             _fileId = string.Empty;
         }
@@ -194,9 +211,22 @@
         }
     }
 
+    private BadgeStyle GetStatusBadgeStyle(string status)
+    {
+        return status switch
+        {
+            "Downloading" => BadgeStyle.Success,
+            "Waiting" => BadgeStyle.Warning,
+            "Paused" => BadgeStyle.Light,
+            "Completing" => BadgeStyle.Info,
+            _ => BadgeStyle.Secondary
+        };
+    }
+
     public void Dispose()
     {
         _cts?.Cancel();
         _cts?.Dispose();
     }
+
 }

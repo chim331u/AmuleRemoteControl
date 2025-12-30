@@ -9,7 +9,13 @@ namespace AmuleRemoteControl.Components.Service
     public class aMuleRemoteService(
         ILogger<aMuleRemoteService> logger,
         IUtilityServices utilityServices,
-        INetworkHelper networkHelperServices)
+        INetworkHelper networkHelperServices,
+        IDownloadParser downloadParser,
+        IUploadParser uploadParser,
+        IServerParser serverParser,
+        IStatsParser statsParser,
+        ISearchParser searchParser,
+        IPreferencesParser preferencesParser)
         : IAmuleRemoteServices
     {
         /// <summary>
@@ -70,15 +76,18 @@ namespace AmuleRemoteControl.Components.Service
             }
         }
 
-        //public string? DownSpeed { get => downSpeed; set { downSpeed = value; NotifyStateChangedDownSpeed(); } }
-        //private string? downSpeed;
-        //public event Action? OnChangeDownSpeed;
-        //private void NotifyStateChangedDownSpeed() => OnChangeDownSpeed?.Invoke();
-
         ILogger<aMuleRemoteService> _logger = logger;
 
         private readonly IUtilityServices _utilityServices = utilityServices;
         private readonly INetworkHelper _networkHelperServices = networkHelperServices;
+
+        // Parser dependencies (Sprint 10: Phase 3 - Parser Integration)
+        private readonly IDownloadParser _downloadParser = downloadParser;
+        private readonly IUploadParser _uploadParser = uploadParser;
+        private readonly IServerParser _serverParser = serverParser;
+        private readonly IStatsParser _statsParser = statsParser;
+        private readonly ISearchParser _searchParser = searchParser;
+        private readonly IPreferencesParser _preferencesParser = preferencesParser;
         private const string DownloadPage = "amuleweb-main-dload.php";
         private const string Footer = "footer.php";
         private const string ServerPage = "amuleweb-main-servers.php";
@@ -98,12 +107,10 @@ namespace AmuleRemoteControl.Components.Service
 
         public async Task AutoDownSpeed()
         {
-            if (_downloadFiles!=null)
+            if (_downloadFiles != null)
             {
                 GetTotalDownloadSpeed();
             }
-
-            //GetTotalDownloadSpeed();
         }
 
         private void GetTotalDownloadSpeed()
@@ -155,9 +162,17 @@ namespace AmuleRemoteControl.Components.Service
         {
             try
             {
-                var downloading = ParseDownloading(await _networkHelperServices.SendRequest(DownloadPage));
-                _downloadFiles = downloading;
-                return downloading;
+                var html = await _networkHelperServices.SendRequest(DownloadPage);
+                var downloading = _downloadParser.Parse(html);
+
+                if (downloading != null)
+                {
+                    _downloadFiles = downloading;
+                    return downloading;
+                }
+
+                _logger.LogWarning("GetDownloading: Parser returned null");
+                return new List<DownloadFile>();
             }
             catch (Exception ex)
             {
@@ -183,7 +198,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-            
+
             var param = new Dictionary<string, string>();
             param.Add(fileId, "on");
             param.Add("category", "all");
@@ -193,7 +208,7 @@ namespace AmuleRemoteControl.Components.Service
             var result = await _networkHelperServices.PostRequest(DownloadPage, param);
             if (!string.IsNullOrEmpty(result))
             {
-                return ParseDownloading(result);
+                return _downloadParser.Parse(result) ?? new List<DownloadFile>();
             }
 
             return null;
@@ -207,7 +222,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: filesId list is null or empty");
                 return null;
             }
-            
+
 
             // Input validation for command
             if (string.IsNullOrWhiteSpace(command))
@@ -215,7 +230,7 @@ namespace AmuleRemoteControl.Components.Service
                 _logger.LogWarning("PostDownloadCommand: command is null or empty");
                 return null;
             }
-            
+
             var param = new Dictionary<string, string>();
 
             foreach (var fileId in filesId)
@@ -229,7 +244,7 @@ namespace AmuleRemoteControl.Components.Service
             var result = await _networkHelperServices.PostRequest(DownloadPage, param);
             if (!string.IsNullOrEmpty(result))
             {
-                return ParseDownloading(result);
+                return _downloadParser.Parse(result) ?? new List<DownloadFile>();
             }
 
             return null;
@@ -248,13 +263,14 @@ namespace AmuleRemoteControl.Components.Service
 
             if (!string.IsNullOrEmpty(result))
             {
-                return ParseDownloading(result);
+                return _downloadParser.Parse(result) ?? new List<DownloadFile>();
             }
 
             return null;
 
         }
 
+        [Obsolete("Use IDownloadParser.Parse() instead. This method will be removed in Sprint 11.")]
         private List<DownloadFile> ParseDownloading(string downloadingPage)
         {
             try
@@ -398,9 +414,10 @@ namespace AmuleRemoteControl.Components.Service
         {
             try
             {
-                var uploads = ParseUpload(await _networkHelperServices.SendRequest(DownloadPage));
+                var html = await _networkHelperServices.SendRequest(DownloadPage);
+                var uploads = _uploadParser.Parse(html);
 
-                return uploads;
+                return uploads ?? new List<UploadFile>();
             }
             catch (Exception ex)
             {
@@ -411,6 +428,7 @@ namespace AmuleRemoteControl.Components.Service
 
         }
 
+        [Obsolete("Use IUploadParser.Parse() instead. This method will be removed in Sprint 11.")]
         private List<UploadFile> ParseUpload(string downloadingPage)
         {
             try
@@ -488,8 +506,9 @@ namespace AmuleRemoteControl.Components.Service
         #region Server
         public async Task<List<Servers>> GetServers()
         {
-            var serverList = ParseServers(await _networkHelperServices.SendRequest(ServerPage));
-            return serverList;
+            var html = await _networkHelperServices.SendRequest(ServerPage);
+            var serverList = _serverParser.Parse(html);
+            return serverList ?? new List<Servers>();
 
         }
 
@@ -498,16 +517,19 @@ namespace AmuleRemoteControl.Components.Service
             //cmd: connect
             //ip: 516650843
             //port: 4321
-            var serverList = ParseServers(await _networkHelperServices.SendRequest($"{ServerPage}?cmd=connect&ip={serverId}&port={serverPort}"));
-            return serverList;
+            var html = await _networkHelperServices.SendRequest($"{ServerPage}?cmd=connect&ip={serverId}&port={serverPort}");
+            var serverList = _serverParser.Parse(html);
+            return serverList ?? new List<Servers>();
         }
 
         public async Task<List<Servers>> RemoveServer(string serverId, string serverPort)
         {
-            var serverList = ParseServers(await _networkHelperServices.SendRequest($"{ServerPage}?cmd=remove&ip={serverId}&port={serverPort}"));
-            return serverList;
+            var html = await _networkHelperServices.SendRequest($"{ServerPage}?cmd=remove&ip={serverId}&port={serverPort}");
+            var serverList = _serverParser.Parse(html);
+            return serverList ?? new List<Servers>();
         }
 
+        [Obsolete("Use IServerParser.Parse() instead. This method will be removed in Sprint 11.")]
         private List<Servers> ParseServers(string serverHtmlPage)
         {
             HtmlDocument docServer = new HtmlDocument();
@@ -581,11 +603,13 @@ namespace AmuleRemoteControl.Components.Service
         #region Stats
         public async Task<Stats> GetStats()
         {
-            var stats = ParseStats(await _networkHelperServices.SendRequest(StatPage));
-            return stats;
+            var html = await _networkHelperServices.SendRequest(StatPage);
+            var stats = _statsParser.Parse(html);
+            return stats ?? new Stats();
 
         }
 
+        [Obsolete("Use IStatsParser.Parse() instead. This method will be removed in Sprint 11.")]
         private Stats ParseStats(string statsHtmlPage)
         {
             HtmlDocument docServer = new HtmlDocument();
@@ -615,10 +639,6 @@ namespace AmuleRemoteControl.Components.Service
 
             return _stats;
         }
-        #endregion
-
-        #region Shared Files
-
         #endregion
 
         #region Search
@@ -667,17 +687,20 @@ namespace AmuleRemoteControl.Components.Service
             param.Add("maxsizeu", "MByte");
             param.Add("targetcat", targetCat);
 
-            var listSearch = ParseSearch(await _networkHelperServices.PostRequest(SearchPage, param));
+            var html = await _networkHelperServices.PostRequest(SearchPage, param);
+            var listSearch = _searchParser.Parse(html);
             return listSearch ?? new List<Search>(); // Ensure we always return a list, never null
         }
 
         public async Task<List<Search>> RefreshSearch()
         {
-            var listSearch = ParseSearch(await _networkHelperServices.SendRequest($"{SearchPage}?search_sort="));
-            return listSearch;
+            var html = await _networkHelperServices.SendRequest($"{SearchPage}?search_sort=");
+            var listSearch = _searchParser.Parse(html);
+            return listSearch ?? new List<Search>();
         }
 
 
+        [Obsolete("Use ISearchParser.Parse() instead. This method will be removed in Sprint 11.")]
         private List<Search> ParseSearch(string searchPage)
         {
             try
@@ -797,14 +820,6 @@ namespace AmuleRemoteControl.Components.Service
 
         #endregion
 
-        #region Kad
-
-        #endregion
-
-        #region Main Stats
-
-        #endregion
-
         #region aMule Log
 
         public async Task<string> GetaMuleLog()
@@ -841,7 +856,8 @@ namespace AmuleRemoteControl.Components.Service
         {
             try
             {
-                var _preferences = ParsePreferences(await _networkHelperServices.SendRequest(PreferencePage));
+                var html = await _networkHelperServices.SendRequest(PreferencePage);
+                var _preferences = _preferencesParser.Parse(html);
 
                 return _preferences;
             }
@@ -854,6 +870,7 @@ namespace AmuleRemoteControl.Components.Service
 
         }
 
+        [Obsolete("Use IPreferencesParser.Parse() instead. This method will be removed in Sprint 11.")]
         private PreferenceModel ParsePreferences(string preferencesPage)
         {
             try
@@ -1149,7 +1166,7 @@ namespace AmuleRemoteControl.Components.Service
             var result = await _networkHelperServices.PostRequest(PreferencePage, param);
             if (!string.IsNullOrEmpty(result))
             {
-                return ParsePreferences(result);
+                return _preferencesParser.Parse(result);
 
             }
 

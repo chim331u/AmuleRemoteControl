@@ -4,48 +4,80 @@
 
 @if (_accessService.IsAuthorized)
 {
-
     @if (uploadFiles == null)
     {
-        <p>No data</p>
+        <p class="rz-p-4">Loading uploads...</p>
     }
     else
     {
-        <RadzenRow JustifyContent="JustifyContent.End" AlignItems="AlignItems.Center" Gap="1rem">
-            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Icon="sync" Text="Refresh"
-                          Click="Refresh" />
-        </RadzenRow>
-        <RadzenDataList Data="@uploadFiles" TItem="UploadFile" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="false" Style="width: 100%; padding: 0;">
-            <Template Context="_upload">
-                @* <RadzenCard Style="width: 100%; padding: 0;"> *@
-                <RadzenStack>
-                    <RadzenFormField Text="File Name" Variant="Variant.Text" class="rz-color-secondary">
-                        <RadzenTextBox @bind-Value="@_upload.FileName" Disabled />
-                    </RadzenFormField>
+        <!-- Main Fixed-Layout Container -->
+        <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+            
+            <!-- Fixed Header: Refresh Action -->
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="rz-p-3" Style="flex: 0 0 auto; border-bottom: 1px solid var(--rz-base-300);">
+                <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 800; color: var(--rz-primary); margin: 0;">
+                    Active Uploads
+                </RadzenText>
+                <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Icon="sync" Text="Refresh" Click="Refresh" />
+            </RadzenStack>
 
-                    <RadzenFormField Text="User" Variant="Variant.Text" class="rz-color-secondary">
-                        <RadzenTextBox @bind-Value="@_upload.UserName" Disabled />
-                    </RadzenFormField>
+            <!-- Scrollable Content -->
+            <div style="flex: 1 1 auto; overflow-y: auto; padding: 1rem; min-height: 0;">
+                
+                @if (uploadFiles.Count == 0)
+                {
+                    <RadzenText TextStyle="TextStyle.Body1" Class="rz-color-secondary-text" Style="text-align: center; margin-top: 2rem;">
+                        No active uploads.
+                    </RadzenText>
+                }
+                
+                @foreach (var file in uploadFiles)
+                {
+                    <RadzenCard Variant="Variant.Outlined" Class="rz-p-3 rz-mb-2" Style="border-radius: 12px;">
+                        
+                        <!-- File Name & User -->
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="0.2rem" Class="rz-mb-2">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6" Style="font-weight: 700; color: var(--rz-text-title-color); word-break: break-all;">
+                                @file.FileName
+                            </RadzenText>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.3rem">
+                                <RadzenIcon Icon="person" Style="font-size: 0.9rem; color: var(--rz-secondary);" />
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary-text">
+                                    @file.UserName
+                                </RadzenText>
+                            </RadzenStack>
+                        </RadzenStack>
 
-                    <RadzenFormField Text="Up" Variant="Variant.Text" class="rz-color-secondary">
-                        <RadzenTextBox @bind-Value="@_upload.Up" Disabled />
-                    </RadzenFormField>
+                        <!-- Stats Row -->
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Style="border-top: 1px solid var(--rz-base-300); padding-top: 0.5rem;">
+                            
+                            <!-- Speed -->
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.2rem">
+                                <RadzenIcon Icon="speed" Style="font-size: 1rem; color: var(--rz-success);" />
+                                <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: 600;">
+                                    @file.Speed
+                                </RadzenText>
+                            </RadzenStack>
 
-                    <RadzenFormField Text="Down" Variant="Variant.Text" class="rz-color-secondary">
-                        <RadzenTextBox @bind-Value="@_upload.Down" Disabled />
-                    </RadzenFormField>
+                            <!-- Data Transferred -->
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    <span style="color: var(--rz-secondary);">Up:</span> @file.Up
+                                </RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    <span style="color: var(--rz-secondary);">Down:</span> @file.Down
+                                </RadzenText>
+                            </RadzenStack>
 
-                    <RadzenFormField Text="Speed" Variant="Variant.Text" class="rz-color-secondary">
-                        <RadzenTextBox @bind-Value="@_upload.Speed" Disabled />
-                    </RadzenFormField>
+                        </RadzenStack>
 
-                </RadzenStack>
-
-                @* </RadzenCard> *@
-            </Template>
-        </RadzenDataList>
+                    </RadzenCard>
+                }
+            </div>
+        </div>
     }
 }
+
 @code {
     [Inject]
     public IAmuleRemoteServices _service { get; set; }
@@ -53,7 +85,6 @@
     public IAccessService _accessService { get; set; }
 
     IList<UploadFile> uploadFiles = new List<UploadFile>();
-    // string totalSpeedText = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,15 +97,11 @@
         {
             NavManager.NavigateTo("/login");
         }
-
     }
 
     private async Task Refresh()
     {
-
         uploadFiles = await _service.GetUploads();
-        // GetTotalDownloadSpeed();
         StateHasChanged();
-
     }
 }

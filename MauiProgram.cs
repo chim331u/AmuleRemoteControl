@@ -2,6 +2,7 @@
 using AmuleRemoteControl.Components.Data;
 using AmuleRemoteControl.Components.Interfaces;
 using AmuleRemoteControl.Components.Service;
+using AmuleRemoteControl.Components.Service.Parsers;
 using Microsoft.Extensions.Logging;
 using Plugin.Fingerprint;
 using Plugin.Fingerprint.Abstractions;
@@ -28,52 +29,68 @@ public static class MauiProgram
 
         builder.Services.AddSingleton(typeof(IFingerprint), CrossFingerprint.Current);
 
-            // Register CultureProvider as singleton to manage application culture
-            builder.Services.AddSingleton<ICultureProvider, CultureProvider>();
+        // Register CultureProvider as singleton to manage application culture
+        builder.Services.AddSingleton<ICultureProvider, CultureProvider>();
 
-            builder.Services.AddScoped<SessionStorageAccessor>();
-            builder.Services.AddScoped<DialogService>();
-            builder.Services.AddScoped<NotificationService>();
-            builder.Services.AddScoped<TooltipService>();
-            builder.Services.AddScoped<ContextMenuService>();
-            // Register internal services
-            builder.Services.AddScoped<IUtilityServices, UtilityServices>();
-            builder.Services.AddScoped<IAmuleRemoteServices, aMuleRemoteService>();
-            builder.Services.AddScoped<IAccessService, AccessService>();
-            builder.Services.AddScoped<IEd2kUrlParser, Ed2kUrlParser>(); // Ed2k URL parser for deep linking
-            builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>(); // Event-based deep link service
+        // Register Radzen services (UI components)
+        builder.Services.AddScoped<SessionStorageAccessor>();
+        builder.Services.AddScoped<DialogService>();
+        builder.Services.AddScoped<NotificationService>();
+        builder.Services.AddScoped<TooltipService>();
+        builder.Services.AddScoped<ContextMenuService>();
 
-            // Configure HttpClient with IHttpClientFactory for NetworkHelper
-            builder.Services.AddHttpClient<INetworkHelper, NetworkHelper>(client =>
-            {
-                client.Timeout = TimeSpan.FromSeconds(30);
-            })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-            {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            });
+        // Register core application services
+        builder.Services.AddScoped<IUtilityServices, UtilityServices>();
+        builder.Services.AddScoped<IAmuleRemoteServices, aMuleRemoteService>();
+        builder.Services.AddScoped<IAccessService, AccessService>();
+        builder.Services.AddScoped<IEd2kUrlParser, Ed2kUrlParser>(); // Ed2k URL parser for deep linking
+        builder.Services.AddSingleton<IDeepLinkService, DeepLinkService>(); // Event-based deep link service
 
-            var _cachePath = FileSystem.Current.CacheDirectory;
+        // Register HTML parsing infrastructure (Sprint 7-8: Phase 3)
+        builder.Services.AddSingleton<XPathConfiguration>(); // XPath configuration for version-aware parsing
 
-            var _appData = FileSystem.AppDataDirectory;
+        // Register parser implementations (Sprint 8-9)
+        builder.Services.AddScoped<IDownloadParser, DownloadParser>();
+        builder.Services.AddScoped<IUploadParser, UploadParser>();
+        builder.Services.AddScoped<IServerParser, ServerParser>();
+        builder.Services.AddScoped<IStatsParser, StatsParser>();
+        builder.Services.AddScoped<ISearchParser, SearchParser>();
+        builder.Services.AddScoped<IPreferencesParser, PreferencesParser>();
 
-            var logFileName = Path.Combine(_cachePath, "serilog_.log");
+        // Register version detector (Sprint 10+)
+        builder.Services.AddSingleton<IAmuleVersionDetector, AmuleVersionDetector>();
 
-            Log.Logger = new LoggerConfiguration()
-                         .Enrich.FromLogContext()
-                         .WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {CorrelationId} {Level:u3} {Username} {Message:lj}{Exception}{NewLine}")
-                         .WriteTo.File(logFileName, rollingInterval: RollingInterval.Day,
-                         retainedFileCountLimit: 5,
-                         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {CorrelationId} {Level:u3} {Username} {Message:lj}{Exception}{NewLine}")
-                         .CreateLogger();
+        // Configure HttpClient with IHttpClientFactory for NetworkHelper
+        builder.Services.AddHttpClient<INetworkHelper, NetworkHelper>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+        });
 
-            builder.Services.AddLogging(logging =>
-            {
-                logging.AddSerilog(dispose: true);
-            });
+        var _cachePath = FileSystem.Current.CacheDirectory;
+
+        var _appData = FileSystem.AppDataDirectory;
+
+        var logFileName = Path.Combine(_cachePath, "serilog_.log");
+
+        Log.Logger = new LoggerConfiguration()
+                     .Enrich.FromLogContext()
+                     .WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {CorrelationId} {Level:u3} {Username} {Message:lj}{Exception}{NewLine}")
+                     .WriteTo.File(logFileName, rollingInterval: RollingInterval.Day,
+                     retainedFileCountLimit: 5,
+                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {CorrelationId} {Level:u3} {Username} {Message:lj}{Exception}{NewLine}")
+                     .CreateLogger();
+
+        builder.Services.AddLogging(logging =>
+        {
+            logging.AddSerilog(dispose: true);
+        });
         return builder.Build();
     }
 }
 
 
-            
+

@@ -3,102 +3,117 @@
 
 <RadzenLayout>
     <RadzenHeader>
-        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="2px">
+        <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="2px"
+                   Style="padding-left: 1rem; padding-right: 0.5rem;">
 
-                @if (_service.Status != null && _service.Status.Ed2kStat != null)
-                {
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
-                        <RadzenIcon Icon="@(_service.Status.Ed2kStat.Contains("Connected") ? "link" : "link_off" )" />
-                        <RadzenStack Style="@($"color: {(_service.Status.Ed2kStat.Contains("Connected") ? "green" : "red")}")"><strong>ED2K</strong></RadzenStack>
-                    </RadzenStack>
+            @if (_service.Status != null && _service.Status.Ed2kStat != null)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                             JustifyContent="JustifyContent.Center">
+                    <RadzenIcon Icon="@(_service.Status.Ed2kStat.Contains("Connected") ? "link" : "link_off")"
+                                Style="@($"font-size: 1.8rem; color: {(_service.Status.Ed2kStat.Contains("Connected") ? "var(--rz-success)" : "var(--rz-danger)")}")"/>
+                    <RadzenStack><strong>ED2K</strong></RadzenStack>
+                </RadzenStack>
+            }
+            @if (_service.Status != null && _service.Status.KadStat != null)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                             JustifyContent="JustifyContent.Center">
+                    <RadzenIcon Icon="@(_service.Status.KadStat.Contains("Connected") ? "link" : "link_off")"
+                                Style="@($"font-size: 1.8rem; color: {(_service.Status.KadStat.Contains("Connected") ? "var(--rz-success)" : "var(--rz-danger)")}")"/>
+                    <RadzenStack><strong>KAD</strong></RadzenStack>
+                </RadzenStack>
+            }
 
-                }
-                @if (_service.Status != null && _service.Status.KadStat != null)
-                {
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
-                        <RadzenIcon Icon="@(_service.Status.KadStat.Contains("Connected") ? "link" : "link_off" )" />
-                        <RadzenStack Style="@($"color: {(_service.Status.KadStat.Contains("Connected") ? "green" : "red")}")"><strong>KAD</strong></RadzenStack>
-                    </RadzenStack>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center">
+                <RadzenIcon Icon="speed" Style="font-size: 1.8rem;"/>
+                <RadzenStack Style="color: white"><strong>@_service.DownSpeed</strong></RadzenStack>
+            </RadzenStack>
 
-                }
-
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
-                        <RadzenIcon Icon="speed" />
-                        <RadzenStack Style="color: white"><strong>@_service.DownSpeed</strong></RadzenStack>
-                    </RadzenStack>
-
-                <RadzenProfileMenu Click="@OnProfileClick">
-                    <Template>
-                        @if (_accessService.IsAuthorized)
-                        {
-                            <RadzenImage Path="Images\amule-logo-green.png" style="width: 32px"></RadzenImage>
-                        }
-                        else
-                        {
-                            <RadzenGravatar Email="user@example.com"></RadzenGravatar>
-                        }
-                    </Template>
-                    <ChildContent>
-                        @if (_accessService.IsAuthorized)
-                        {
-                        <RadzenProfileMenuItem Text="Setting mule" Path="preference" Icon="settings"></RadzenProfileMenuItem>
+            <RadzenProfileMenu Click="@OnProfileClick">
+                <Template>
+                    @if (_accessService.IsAuthorized)
+                    {
+                        <RadzenImage Path="Images\amule-logo-green.png" style="width: 32px"></RadzenImage>
+                    }
+                    else
+                    {
+                        <RadzenGravatar Email="user@example.com"></RadzenGravatar>
+                    }
+                </Template>
+                <ChildContent>
+                    @if (_accessService.IsAuthorized)
+                    {
+                        <RadzenProfileMenuItem Text="Setting mule" Path="preference"
+                                               Icon="settings"></RadzenProfileMenuItem>
                         <RadzenProfileMenuItem Text="Log mule" Path="logamule" Icon="article"></RadzenProfileMenuItem>
-                            <hr />
-                            <RadzenProfileMenuItem Text="Logout" Icon="logout"></RadzenProfileMenuItem>
-                        }
-                        else
-                        {
-                            <RadzenProfileMenuItem Text="Login" Path="login" Icon="account_box"></RadzenProfileMenuItem>
-                            <RadzenProfileMenuItem Text="About" Path="about" Icon="question_mark"></RadzenProfileMenuItem>
-                        }
-                        <hr />
-                        <RadzenProfileMenuItem Text="Setting App" Icon="app_settings_alt" Path="setting"></RadzenProfileMenuItem>
-                        <RadzenProfileMenuItem Text="Log App" Icon="article" Path="logger"></RadzenProfileMenuItem>
-                        <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.End">
-                        <p>v2.0.1</p></RadzenStack>
-                    </ChildContent>
-                </RadzenProfileMenu>
+                        <hr/>
+                        <RadzenProfileMenuItem Text="Logout" Icon="logout"></RadzenProfileMenuItem>
+                    }
+                    else
+                    {
+                        <RadzenProfileMenuItem Text="Login" Path="login" Icon="account_box"></RadzenProfileMenuItem>
+                        <RadzenProfileMenuItem Text="About" Path="about" Icon="question_mark"></RadzenProfileMenuItem>
+                    }
+                    <hr/>
+                    <RadzenProfileMenuItem Text="Setting App" Icon="app_settings_alt"
+                                           Path="setting"></RadzenProfileMenuItem>
+                    <RadzenProfileMenuItem Text="Log App" Icon="article" Path="logger"></RadzenProfileMenuItem>
+                    <RadzenStack Gap="1px" Orientation="Orientation.Horizontal" AlignItems="AlignItems.End">
+                        <hr/>
+                        <p> v 2.1.0</p>
+                        </RadzenStack>
+                </ChildContent>
+            </RadzenProfileMenu>
 
             @* </RadzenStack> *@
         </RadzenRow>
     </RadzenHeader>
 
-    <RadzenBody>
+    <RadzenBody Style="overflow: hidden">
 
-        <div>
+        <div style="height: 100%; width: 100%; overflow-x: hidden; overflow-y: auto;">
             @Body
         </div>
     </RadzenBody>
     <RadzenFooter>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" JustifyContent="JustifyContent.SpaceEvenly" Wrap="FlexWrap.NoWrap" Style="width: 100%; padding: 0.5rem 0;">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0"
+                     JustifyContent="JustifyContent.SpaceEvenly" Wrap="FlexWrap.NoWrap"
+                     Style="width: 100%; padding: 0.5rem 0;">
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
-                         onclick="@(()=> NavigateTo("upload"))" Style="cursor: pointer; min-width: 60px;">
-                <RadzenIcon Icon="file_upload" Style="font-size: 2.5rem;" />
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(() => NavigateTo("upload"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="file_upload" Style="font-size: 2.5rem;"/>
                 <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Upload</RadzenText>
             </RadzenStack>
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
-                         onclick="@(()=> NavigateTo("server"))" Style="cursor: pointer; min-width: 60px;">
-                <RadzenIcon Icon="dns" Style="font-size: 2.5rem;" />
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(() => NavigateTo("server"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="dns" Style="font-size: 2.5rem;"/>
                 <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Server</RadzenText>
             </RadzenStack>
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
-                         onclick="@(()=> NavigateTo("addlink"))" Style="cursor: pointer; min-width: 60px;">
-                <RadzenIcon Icon="add_link" Style="font-size: 2.5rem;" />
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(() => NavigateTo("addlink"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="add_link" Style="font-size: 2.5rem;"/>
                 <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Add Link</RadzenText>
             </RadzenStack>
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
-                         onclick="@(()=> NavigateTo("search"))" Style="cursor: pointer; min-width: 60px;">
-                <RadzenIcon Icon="search" Style="font-size: 2.5rem;" />
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(() => NavigateTo("search"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="search" Style="font-size: 2.5rem;"/>
                 <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Search</RadzenText>
             </RadzenStack>
 
-            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.2rem"
-                         onclick="@(()=> NavigateTo("home"))" Style="cursor: pointer; min-width: 60px;">
-                <RadzenIcon Icon="file_download" Style="font-size: 2.5rem;" />
+            <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.Center" Gap="0.2rem"
+                         onclick="@(() => NavigateTo("home"))" Style="cursor: pointer; min-width: 60px;">
+                <RadzenIcon Icon="file_download" Style="font-size: 2.5rem;"/>
                 <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">Download</RadzenText>
             </RadzenStack>
 
@@ -109,19 +124,14 @@
 
 @code {
 
-    [Inject]
-    public IAccessService _accessService { get; set; }
-    [Inject]
-    public IAmuleRemoteServices _service { get; set; }
+    [Inject] public IAccessService _accessService { get; set; }
+    [Inject] public IAmuleRemoteServices _service { get; set; }
 
-    [Inject]
-    public ICultureProvider _cultureProvider { get; set; }
+    [Inject] public ICultureProvider _cultureProvider { get; set; }
 
-    [Inject]
-    public IUtilityServices UtilityServices { get; set; }
+    [Inject] public IUtilityServices UtilityServices { get; set; }
 
-    [Inject]
-    public IDeepLinkService DeepLinkService { get; set; }
+    [Inject] public IDeepLinkService DeepLinkService { get; set; }
 
     // Stats? stat = new Stats();
     protected override void OnInitialized()
@@ -159,7 +169,7 @@
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
-       => this.InvokeAsync(StateHasChanged);
+        => this.InvokeAsync(StateHasChanged);
 
     private void OnDownChanged(object? sender, EventArgs e)
         => this.InvokeAsync(StateHasChanged);
@@ -212,13 +222,12 @@
 
             NavManager.NavigateTo("/login/true");
             StateHasChanged();
-
         }
-
     }
+
 }
 
-<RadzenDialog />
-<RadzenNotification />
-<RadzenContextMenu />
-<RadzenTooltip />
+<RadzenDialog/>
+<RadzenNotification/>
+<RadzenContextMenu/>
+<RadzenTooltip/>
