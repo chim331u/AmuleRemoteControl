@@ -1,6 +1,7 @@
 ﻿@page "/server"
 @using AmuleRemoteControl.Components.Data.AmuleModel
 @using AmuleRemoteControl.Components.Interfaces
+@using System.Text.RegularExpressions
 @implements IDisposable
 
 @if (_accessService.IsAuthorized)
@@ -12,90 +13,95 @@
     }
     else
     {
-        <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByName" Text="Name" />
-            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByUsers" Text="User" />
-            <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" Icon="sort_by_alpha" Click="OrderByFiles" Text="File" />
+    <div style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+        <!-- Header Section (Fixed Height) -->
+        <RadzenStack Gap="1rem" Class="rz-mb-2" Style="flex: 0 0 auto;">
+            
+            <!-- Connected Server Indicator -->
+            @* <RadzenCard Variant="Variant.Filled" Class="rz-p-3" Style="border: 1px solid var(--rz-base-300);"> *@
+                <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="@(_service.Status.Ed2kStat.Contains("Connected") ? "check_circle" : "cancel")" 
+                                    Style="@($"color: {(_service.Status.Ed2kStat.Contains("Connected") ? "var(--rz-success)" : "var(--rz-danger)")}; font-size: 1.5rem;")" />
+                        <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold; margin: 0;">
+                            @(_service.Status.Ed2kStat.Contains("Connected") ? "ED2K Connected" : "ED2K Disconnected")
+                        </RadzenText>
+                    </RadzenStack>
 
-            <RadzenButton IsBusy=@busy ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Small" Icon="sync" Click="Refresh" />
-        </RadzenRow>
+                    @if (_service.Status.Ed2kStat.Contains("Connected"))
+                    {
+                        var serverInfo = ParseConnectedServerInfo(_service.Status.Ed2kStat);
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="0rem" Class="rz-pl-5">
+                            <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: 800; color: var(--rz-text-title-color);">@serverInfo.Name</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary-text" Style="font-family: monospace;">@serverInfo.Address</RadzenText>
+                        </RadzenStack>
+                    }
+                    
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Class="rz-mt-1">
+                         <RadzenIcon Icon="@(_service.Status.KadStat.Contains("Connected") ? "check_circle" : "cancel")" 
+                                     Style="@($"color: {(_service.Status.KadStat.Contains("Connected") ? "var(--rz-success)" : "var(--rz-danger)")}; font-size: 1rem;")" />
+                         <RadzenText TextStyle="TextStyle.Caption" Style="font-weight: bold;">KAD: @_service.Status.KadStat</RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            @* </RadzenCard> *@
 
-        <RadzenStack>
-            <RadzenRow AlignItems="AlignItems.Center">
-                <RadzenLabel Style="@($"color: {(_service.Status.Ed2kStat.Contains("Connected") ? "green" : " red")}")"><strong>ED2K: </strong>@_service.Status.Ed2kStat</RadzenLabel>
-                <RadzenLabel Style="@($"color: {(_service.Status.KadStat.Contains("Connected") ? "green" : " red")}")"><strong>Kad: </strong>@_service.Status.KadStat</RadzenLabel>
-            </RadzenRow>
+            <!-- Toolbar -->
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                    <RadzenButton ButtonStyle="@(activeSortColumn == "Name" ? ButtonStyle.Primary : ButtonStyle.Light)" Variant="Variant.Flat" Size="ButtonSize.Small" Icon="sort_by_alpha" Click="OrderByName" Text="Name" />
+                    <RadzenButton ButtonStyle="@(activeSortColumn == "Users" ? ButtonStyle.Primary : ButtonStyle.Light)" Variant="Variant.Flat" Size="ButtonSize.Small" Icon="group" Click="OrderByUsers" Text="Users" />
+                    <RadzenButton ButtonStyle="@(activeSortColumn == "Files" ? ButtonStyle.Primary : ButtonStyle.Light)" Variant="Variant.Flat" Size="ButtonSize.Small" Icon="folder" Click="OrderByFiles" Text="Files" />
+                </RadzenStack>
+                @* <RadzenButton IsBusy=@busy ButtonStyle="ButtonStyle.Base" Size="ButtonSize.Small" Icon="refresh" Click="Refresh" /> *@
+            </RadzenStack>
+
         </RadzenStack>
 
+        <!-- Scrollable Server List (Flex Grow) -->
+        <div style="flex: 1 1 auto; overflow-y: auto; padding-bottom: 10px; min-height: 0;">
+            @foreach (var server in _servers)
+            {
+                <RadzenCard Variant="Variant.Outlined" Class="rz-p-3" Style="margin-bottom: 0.5rem; border-radius: 12px;">
+                            
+                    <!-- Card Header: Name & Connect Action -->
+                    <RadzenRow AlignItems="AlignItems.Start" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-2">
+                        <RadzenColumn Size="8">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6" Style="font-weight: 800; color: var(--rz-primary); margin-bottom: 0;">@server.ServerName</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary-text">@server.Address</RadzenText>
+                        </RadzenColumn>
+                        <RadzenColumn Size="4" Class="rz-text-align-right">
+                                <RadzenButton ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Size="ButtonSize.Small" Icon="bolt" Text="Connect" Click=@(args => ConnectServer(server)) />
+                        </RadzenColumn>
+                    </RadzenRow>
 
-        <RadzenDataGrid @ref=grid Data="@_servers" Count="@count" LoadData="@LoadData" AllowVirtualization="true"
-                        AllowFiltering="false" FilterPopupRenderMode="PopupRenderMode.OnDemand"
-                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LogicalFilterOperator="LogicalFilterOperator.Or"
-                        Style="height:560px" AllowSorting="true">
-            <Columns>
-                <RadzenDataGridColumn TItem="Servers" Property="Files" Title="File N.">
-                    <Template Context="_server">
-                        <RadzenCard Style="width: 100%; padding: 0;">
-                            <RadzenStack>
-                                <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="5" SizeMD="2">
-                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Server Name:" />
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="7" SizeMD="10">
-                                        <RadzenText TextStyle="TextStyle.Body2">@(_server.ServerName)</RadzenText>
-                                    </RadzenColumn>
-                                </RadzenRow>
+                    <!-- Description -->
+                    @if (!string.IsNullOrEmpty(server.Description))
+                    {
+                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-3 rz-color-base-content" Style="font-size: 0.85rem; line-height: 1.2;">
+                            @server.Description
+                        </RadzenText>
+                    }
 
-                                <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="5" SizeMD="4">
-                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Description:" />
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="7" SizeMD="8">
-                                        <RadzenText TextStyle="TextStyle.Body2">@_server.Description</RadzenText>
-                                    </RadzenColumn>
-                                </RadzenRow>
-
-                                <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="5" SizeMD="4">
-                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Address:" />
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="7" SizeMD="8">
-                                        <RadzenText TextStyle="TextStyle.Body2">@(_server.Address)</RadzenText>
-                                    </RadzenColumn>
-                                </RadzenRow>
-
-                                <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="5" SizeMD="4">
-                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Users:" />
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="7" SizeMD="8">
-                                        <RadzenText TextStyle="TextStyle.Body2">@_utilityService.FormatAsGeneral(_server.Users)</RadzenText>
-                                    </RadzenColumn>
-                                </RadzenRow>
-
-                                <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="5" SizeMD="4">
-                                        <RadzenLabel TextStyle="TextStyle.H6" TagName="TagName.H5" Class="rz-mb-0" Text="Files:" />
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="7" SizeMD="8">
-                                        <RadzenText TextStyle="TextStyle.Body2">@_utilityService.FormatAsGeneral(_server.Files)</RadzenText>
-                                    </RadzenColumn>
-                                </RadzenRow>
-
-                                <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-
-                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" Icon="sync" Text="Delete" Click=@(args => DeleteServer(_server)) />
-                                    <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
-                                                  Size="ButtonSize.Medium" Icon="usb" Text="Connect" Click=@(args => ConnectServer(_server)) />
-                                </RadzenRow>
-
+                    <!-- Footer: Stats & Delete -->
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Style="border-top: 1px solid var(--rz-base-300); padding-top: 0.5rem;">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.2rem">
+                                <RadzenIcon Icon="group" Style="font-size: 1rem; color: var(--rz-secondary);" />
+                                <RadzenText TextStyle="TextStyle.Caption">@_utilityService.FormatAsGeneral(server.Users)</RadzenText>
                             </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.2rem">
+                                <RadzenIcon Icon="folder" Style="font-size: 1rem; color: var(--rz-secondary);" />
+                                <RadzenText TextStyle="TextStyle.Caption">@_utilityService.FormatAsGeneral(server.Files)</RadzenText>
+                            </RadzenStack>
+                        </RadzenStack>
+                        
+                        <RadzenButton ButtonStyle="ButtonStyle.Base" Variant="Variant.Text" Size="ButtonSize.Small" Icon="delete" Class="rz-p-0" Click=@(args => DeleteServer(server)) />
+                    </RadzenStack>
 
-                        </RadzenCard>
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
+                </RadzenCard>
+            }
+        </div>
+    </div>
 
     }
 }
@@ -108,12 +114,12 @@
     public IUtilityServices _utilityService { get; set; }
 
     IList<Servers> servers;
-    IEnumerable<Servers> _servers;
+    IEnumerable<Servers> _servers = new List<Servers>();
 
     // Stats stat = new Stats();
     bool busy;
-    RadzenDataGrid<Servers> grid;
-    int count;
+    // RadzenDataGrid<Servers> grid; // Removed
+    // int count; // Removed
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,6 +128,7 @@
         if (_accessService.IsAuthorized)
         {
             servers = await _service.GetServers();
+            _servers = servers; // Initialize view list
             // stat = await _service.GetStats();
             await _service.AutoStatus();
             StateHasChanged();
@@ -143,6 +150,7 @@
     protected async Task ConnectServer(Servers server)
     {
         servers = await _service.ConnectServer(server.ServerId, server.Port);
+        _servers = servers; // Update view
         // stat = await _service.GetStats();
         StateHasChanged();
         if (servers != null)
@@ -188,6 +196,7 @@
         {
 
             servers = await _service.RemoveServer(server.ServerId, server.Port);
+            _servers = servers; // Update view
             // stat = await _service.GetStats();
             StateHasChanged();
 
@@ -216,48 +225,7 @@
         }
     }
 
-    async Task LoadData(LoadDataArgs args)
-    {
-        // await Task.Yield();
-
-        // if (!string.IsNullOrEmpty(args.Filter) && lastfilter != args.Filter)
-        // {
-        //     args.Skip = 0;
-        // }
-
-        // console.Log($"Skip: {args.Skip}, Top: {args.Top}");
-
-        // var query = dbContext.OrderDetails.AsQueryable();
-
-        // if (!string.IsNullOrEmpty(args.Filter))
-        // {
-        //     lastfilter = args.Filter;
-        //     query = query.Where(args.Filter);
-        //     count = await Task.FromResult(query.Count());
-        // }
-        // else
-        // {
-        count = servers.Count();
-        // }
-
-        //np(User.Name) desc
-        // if (!string.IsNullOrEmpty(args.OrderBy))
-        // {
-        //     if (args.OrderBy.Contains("desc"))
-        //     {
-
-        //         var a = salaries.AsQueryable();
-
-        //         _salaries = salaries.OrderByDescending(x => x.User.Name);
-        //     }
-        //     else
-        //     {
-        //         _salaries = salaries.OrderBy(x => x.User.Name);
-        //     }
-        // }
-
-        _servers = servers.Skip(args.Skip.Value).Take(args.Top.Value).ToList();
-    }
+    // LoadData removed
 
     protected async Task Refresh()
     {
@@ -270,16 +238,18 @@
     bool orderNameAsc = false;
     bool orderUsersAsc = false;
     bool orderFilesAsc = false;
+    string activeSortColumn = "";
 
     protected void OrderByName()
     {
+        activeSortColumn = "Name";
         if (orderNameAsc)
         {
-            servers = servers.OrderBy(x => x.ServerName).ToList();
+            _servers = servers.OrderBy(x => x.ServerName).ToList();
         }
         else
         {
-            servers = servers.OrderByDescending(x => x.ServerName).ToList();
+            _servers = servers.OrderByDescending(x => x.ServerName).ToList();
         }
 
         orderNameAsc = !orderNameAsc;
@@ -288,13 +258,14 @@
 
     protected void OrderByUsers()
     {
+        activeSortColumn = "Users";
         if (orderUsersAsc)
         {
-            servers = servers.OrderBy(x => Convert.ToInt32(x.Users)).ToList();
+            _servers = servers.OrderBy(x => Convert.ToInt32(x.Users)).ToList();
         }
         else
         {
-            servers = servers.OrderByDescending(x => Convert.ToInt32(x.Users)).ToList();
+            _servers = servers.OrderByDescending(x => Convert.ToInt32(x.Users)).ToList();
         }
 
         orderUsersAsc = !orderUsersAsc;
@@ -303,17 +274,41 @@
 
     protected void OrderByFiles()
     {
+        activeSortColumn = "Files";
         if (orderFilesAsc)
         {
-            servers = servers.OrderBy(x => Convert.ToInt32(x.Files)).ToList();
+            _servers = servers.OrderBy(x => Convert.ToInt32(x.Files)).ToList();
         }
         else
         {
-            servers = servers.OrderByDescending(x => Convert.ToInt32(x.Files)).ToList();
+            _servers = servers.OrderByDescending(x => Convert.ToInt32(x.Files)).ToList();
         }
 
         orderFilesAsc = !orderFilesAsc;
         StateHasChanged();
+    }
+
+    private (string Name, string Address) ParseConnectedServerInfo(string status)
+    {
+        if (string.IsNullOrEmpty(status)) return ("Unknown", "");
+
+        // Expected format: "Connected to ServerName (IP:Port)"
+        // Or "Connected to: ServerName (IP:Port)"
+        // Or just "Connected"
+        try
+        {
+            var match = Regex.Match(status, @"Connected to:?\s*(.+?)\s*\((.+?)\)", RegexOptions.IgnoreCase);
+            if (match.Success)
+            {
+                return (match.Groups[1].Value.Trim(), match.Groups[2].Value.Trim());
+            }
+        }
+        catch 
+        {
+            // Ignore parse errors
+        }
+
+        return (status, "");
     }
 }
 

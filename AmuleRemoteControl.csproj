@@ -55,6 +55,9 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)"/>
+        
+        <!-- Embedded Resources for Parsing -->
+        <EmbeddedResource Include="Resources\Raw\PreferenceMapping.json" />
     </ItemGroup>
 
     <ItemGroup>
